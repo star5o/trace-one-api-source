@@ -134,13 +134,6 @@ export default {
       if (urlParams.has('model')) {
         this.form.model = urlParams.get('model');
       }
-      
-      // 如果所有参数都存在，自动开始溯源
-      if (this.form.baseUrl && this.form.key && this.form.model) {
-        this.$nextTick(() => {
-          this.startTrace();
-        });
-      }
     },
     async startTrace() {
       if (!this.form.baseUrl || !this.form.key || !this.form.model) {

@@ -148,7 +148,7 @@ class TraceController {
       
       // 获取随机图片并返回
       try {
-        const imageResponse = await axios.get('https://picsum.photos/200/300', {
+        const imageResponse = await axios.get('https://picsum.photos/200/200', {
           responseType: 'arraybuffer',
           headers: { 'Cache-Control': 'no-cache' }
         });
