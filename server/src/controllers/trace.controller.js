@@ -16,7 +16,13 @@ class TraceController {
       const traceId = uuidv4();
       
       // 获取客户端IP和User-Agent
-      const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      
+      // 过滤掉Docker内部IP地址（172.17.0.1）
+      if (ip && ip.includes('172.17.0.1')) {
+        ip = ip.split(',').filter(addr => !addr.trim().includes('172.17.0.1')).join(',');
+      }
+      
       const userAgent = req.headers['user-agent'];
       
       // 记录请求时间
@@ -131,7 +137,13 @@ class TraceController {
       }
       
       // 获取客户端IP和User-Agent
-      const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      
+      // 过滤掉Docker内部IP地址（172.17.0.1）
+      if (ip && ip.includes('172.17.0.1')) {
+        ip = ip.split(',').filter(addr => !addr.trim().includes('172.17.0.1')).join(',');
+      }
+      
       const userAgent = req.headers['user-agent'];
       
       // 查找溯源记录
@@ -139,12 +151,12 @@ class TraceController {
       
       if (trace) {
         // 如果记录存在但IP不同，说明是通过中转节点访问
-        if (trace.ip !== ip) {
+        if (trace.ip !== ip && ip) {
           console.log(`检测到中转节点访问: ${ip} (原IP: ${trace.ip})`);
           
           // 更新溯源记录，添加IP路径
           let newIpPath = trace.ipPath || trace.ip;
-          if (!newIpPath.includes(ip)) {
+          if (!newIpPath.includes(ip) && ip) {
             newIpPath = `${newIpPath}->${ip}`;
             
             // 更新数据库中的IP路径
