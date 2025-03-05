@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 // 确保数据目录存在
 const dbDir = path.join(__dirname, '../../data');
@@ -10,6 +11,16 @@ if (!fs.existsSync(dbDir)) {
 
 const dbPath = path.join(dbDir, 'openai-proxy-manager.db');
 const db = new sqlite3.Database(dbPath);
+
+// 生成密码哈希
+const hashPassword = (password, salt) => {
+  return crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+};
+
+// 生成随机盐值
+const generateSalt = () => {
+  return crypto.randomBytes(16).toString('hex');
+};
 
 // 初始化数据库表
 const initDatabase = () => {
@@ -75,11 +86,50 @@ const initDatabase = () => {
           responseTime INTEGER,
           createdAt INTEGER NOT NULL
         )
+      `);
+      
+      // 创建用户表
+      db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          username TEXT UNIQUE NOT NULL,
+          passwordHash TEXT NOT NULL,
+          salt TEXT NOT NULL,
+          isAdmin INTEGER DEFAULT 0,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL
+        )
       `, (err) => {
         if (err) {
           reject(err);
         } else {
-          resolve();
+          // 检查是否需要创建默认管理员用户
+          db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+            if (err) {
+              console.error('检查用户数量失败:', err);
+              resolve();
+            } else if (row.count === 0) {
+              // 创建默认管理员用户 (admin/admin123)
+              const salt = generateSalt();
+              const passwordHash = hashPassword('admin123', salt);
+              const now = Date.now();
+              
+              db.run(
+                'INSERT INTO users (id, username, passwordHash, salt, isAdmin, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                ['admin-' + now, 'admin', passwordHash, salt, 1, now, now],
+                (err) => {
+                  if (err) {
+                    console.error('创建默认管理员用户失败:', err);
+                  } else {
+                    console.log('已创建默认管理员用户 (用户名: admin, 密码: admin123)');
+                  }
+                  resolve();
+                }
+              );
+            } else {
+              resolve();
+            }
+          });
         }
       });
     });
@@ -88,5 +138,7 @@ const initDatabase = () => {
 
 module.exports = {
   db,
-  initDatabase
+  initDatabase,
+  hashPassword,
+  generateSalt
 };
