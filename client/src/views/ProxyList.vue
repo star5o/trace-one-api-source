@@ -26,7 +26,7 @@
               {{ getModelCount(scope.row) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="250">
+          <el-table-column label="操作" width="350">
             <template #default="scope">
               <el-button size="small" @click="viewProxyDetail(scope.row)">查看详情</el-button>
               <el-button size="small" type="primary" @click="openEditProxyDialog(scope.row)">编辑</el-button>
@@ -68,8 +68,12 @@
                     {{ scope.row.models ? scope.row.models.length : 0 }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
-                <el-table-column label="操作" width="250">
+                <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip>
+                  <template #default="scope">
+                    {{ scope.row.remark || '' }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="350">
                   <template #default="scope">
                     <el-button size="small" @click="refreshModels(currentProxy, scope.row)">刷新模型</el-button>
                     <el-button size="small" type="primary" @click="openEditGroupDialog(scope.row)">编辑</el-button>
@@ -103,18 +107,14 @@
                       </el-table-column>
                       <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip>
                         <template #default="scope">
-                          <div class="model-remark">
-                            <span>{{ scope.row.remark || '' }}</span>
-                            <el-button type="text" @click.stop="editModelRemark(currentProxy, group, scope.row)">
-                              <Edit />
-                            </el-button>
-                          </div>
+                          {{ scope.row.remark || '' }}
                         </template>
                       </el-table-column>
-                      <el-table-column label="操作" width="250">
+                      <el-table-column label="操作" width="350">
                         <template #default="scope">
                           <el-button size="small" type="primary" @click="sendToTrace(currentProxy, group, scope.row)">发送到溯源</el-button>
                           <el-button size="small" @click="viewModelDetail(currentProxy.id, group.id, scope.row.id)">查看溯源记录</el-button>
+                          <el-button size="small" type="info" @click="editModelRemark(currentProxy, group, scope.row)">编辑备注</el-button>
                         </template>
                       </el-table-column>
                     </el-table>
