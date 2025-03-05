@@ -11,7 +11,7 @@
           <el-input v-model="form.key" placeholder="输入API Key" show-password></el-input>
         </el-form-item>
         <el-form-item label="模型" required>
-          <el-input v-model="form.model" placeholder="例如: gpt-4-vision-preview"></el-input>
+          <el-input v-model="form.model" placeholder="例如: gpt-4o"></el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="startTrace" :loading="loading">开始溯源</el-button>
@@ -99,7 +99,7 @@ export default {
       form: {
         baseUrl: '',
         key: '',
-        model: 'gpt-4-vision-preview'
+        model: 'gpt-4o'
       },
       loading: false,
       currentTrace: null,
