@@ -33,6 +33,7 @@ const initDatabase = () => {
           proxyId TEXT NOT NULL,
           name TEXT NOT NULL,
           key TEXT NOT NULL,
+          remark TEXT,
           createdAt INTEGER NOT NULL,
           updatedAt INTEGER NOT NULL,
           FOREIGN KEY (proxyId) REFERENCES proxies (id) ON DELETE CASCADE

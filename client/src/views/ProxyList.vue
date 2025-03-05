@@ -68,6 +68,7 @@
                     {{ scope.row.models ? scope.row.models.length : 0 }}
                   </template>
                 </el-table-column>
+                <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
                 <el-table-column label="操作" width="250">
                   <template #default="scope">
                     <el-button size="small" @click="refreshModels(currentProxy, scope.row)">刷新模型</el-button>
@@ -161,6 +162,9 @@
         <el-form-item label="API Key" prop="key">
           <el-input v-model="groupForm.key" placeholder="请输入API Key" show-password />
         </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="groupForm.remark" placeholder="请输入备注" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -224,7 +228,8 @@ export default {
       id: null,
       proxyId: null,
       name: '',
-      key: ''
+      key: '',
+      remark: ''
     })
     
     const groupRules = {
@@ -234,6 +239,9 @@ export default {
       ],
       key: [
         { required: true, message: '请输入API Key', trigger: 'blur' }
+      ],
+      remark: [
+        { max: 200, message: '备注长度不能超过200个字符', trigger: 'blur' }
       ]
     }
     
@@ -365,6 +373,7 @@ export default {
       groupForm.proxyId = currentProxy.value.id
       groupForm.name = ''
       groupForm.key = ''
+      groupForm.remark = ''
       groupDialog.isEdit = false
       groupDialog.visible = true
     }
@@ -375,6 +384,7 @@ export default {
       groupForm.proxyId = group.proxyId
       groupForm.name = group.name
       groupForm.key = group.key
+      groupForm.remark = group.remark
       groupDialog.isEdit = true
       groupDialog.visible = true
     }
@@ -390,7 +400,8 @@ export default {
               // 编辑分组
               await apiClient.put(`/groups/${groupForm.id}`, {
                 name: groupForm.name,
-                key: groupForm.key
+                key: groupForm.key,
+                remark: groupForm.remark
               })
               ElMessage.success('分组更新成功')
             } else {
@@ -398,7 +409,8 @@ export default {
               await apiClient.post('/groups', {
                 proxyId: groupForm.proxyId,
                 name: groupForm.name,
-                key: groupForm.key
+                key: groupForm.key,
+                remark: groupForm.remark
               })
               ElMessage.success('分组添加成功')
             }

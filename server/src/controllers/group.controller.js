@@ -4,13 +4,13 @@ class GroupController {
   // 创建分组
   static async create(req, res) {
     try {
-      const { proxyId, name, key } = req.body;
+      const { proxyId, name, key, remark } = req.body;
       
       if (!proxyId || !name || !key) {
         return res.status(400).json({ message: '中转站ID、名称和API Key不能为空' });
       }
       
-      const group = await GroupModel.create(proxyId, name, key);
+      const group = await GroupModel.create(proxyId, name, key, remark);
       res.status(201).json(group);
     } catch (error) {
       console.error('创建分组失败:', error);
@@ -22,13 +22,13 @@ class GroupController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { name, key } = req.body;
+      const { name, key, remark } = req.body;
       
       if (!name || !key) {
         return res.status(400).json({ message: '名称和API Key不能为空' });
       }
       
-      const group = await GroupModel.update(id, name, key);
+      const group = await GroupModel.update(id, name, key, remark);
       res.json(group);
     } catch (error) {
       console.error('更新分组失败:', error);

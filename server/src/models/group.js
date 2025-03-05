@@ -4,14 +4,14 @@ const axios = require('axios');
 
 class GroupModel {
   // 创建分组
-  static create(proxyId, name, key) {
+  static create(proxyId, name, key, remark = null) {
     return new Promise((resolve, reject) => {
       const id = uuidv4();
       const now = Date.now();
       
       db.run(
-        'INSERT INTO groups (id, proxyId, name, key, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
-        [id, proxyId, name, key, now, now],
+        'INSERT INTO groups (id, proxyId, name, key, remark, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [id, proxyId, name, key, remark, now, now],
         function(err) {
           if (err) {
             reject(err);
@@ -21,6 +21,7 @@ class GroupModel {
               proxyId,
               name,
               key,
+              remark,
               createdAt: now,
               updatedAt: now
             });
@@ -31,13 +32,13 @@ class GroupModel {
   }
 
   // 更新分组
-  static update(id, name, key) {
+  static update(id, name, key, remark = null) {
     return new Promise((resolve, reject) => {
       const now = Date.now();
       
       db.run(
-        'UPDATE groups SET name = ?, key = ?, updatedAt = ? WHERE id = ?',
-        [name, key, now, id],
+        'UPDATE groups SET name = ?, key = ?, remark = ?, updatedAt = ? WHERE id = ?',
+        [name, key, remark, now, id],
         function(err) {
           if (err) {
             reject(err);
@@ -48,6 +49,7 @@ class GroupModel {
               id,
               name,
               key,
+              remark,
               updatedAt: now
             });
           }
