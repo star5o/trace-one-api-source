@@ -101,6 +101,16 @@
                           {{ formatDate(scope.row.created * 1000) }}
                         </template>
                       </el-table-column>
+                      <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip>
+                        <template #default="scope">
+                          <div class="model-remark">
+                            <span>{{ scope.row.remark || '' }}</span>
+                            <el-button type="text" @click.stop="editModelRemark(currentProxy, group, scope.row)">
+                              <el-icon><Edit /></el-icon>
+                            </el-button>
+                          </div>
+                        </template>
+                      </el-table-column>
                       <el-table-column label="操作" width="250">
                         <template #default="scope">
                           <el-button size="small" type="primary" @click="sendToTrace(currentProxy, group, scope.row)">发送到溯源</el-button>
@@ -493,6 +503,33 @@ export default {
       router.push(`/model-detail/${proxyId}/${groupId}/${modelId}`)
     }
     
+    // 编辑模型备注
+    const editModelRemark = (proxy, group, model) => {
+      ElMessageBox.prompt('请输入模型备注', '编辑模型备注', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputPattern: /.+/,
+        inputErrorMessage: '备注不能为空'
+      }).then(async ({ value }) => {
+        try {
+          await apiClient.put(`/models/${model.id}`, {
+            remark: value
+          })
+          ElMessage.success('模型备注更新成功')
+          // 更新当前显示的中转站详情
+          if (currentProxy.value) {
+            const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
+            currentProxy.value = response.data
+          }
+        } catch (error) {
+          console.error('更新模型备注失败:', error)
+          ElMessage.error('更新模型备注失败')
+        }
+      }).catch(() => {
+        // 取消编辑
+      })
+    }
+    
     onMounted(() => {
       fetchProxyList()
     })
@@ -523,7 +560,8 @@ export default {
       confirmDeleteGroup,
       refreshModels,
       sendToTrace,
-      viewModelDetail
+      viewModelDetail,
+      editModelRemark
     }
   }
 }
@@ -532,5 +570,12 @@ export default {
 <style scoped>
 .proxy-table, .group-table, .model-table {
   margin-top: 20px;
+}
+.model-remark {
+  display: flex;
+  align-items: center;
+}
+.model-remark .el-button {
+  margin-left: 10px;
 }
 </style>

@@ -49,6 +49,7 @@ const initDatabase = () => {
           object TEXT,
           owned_by TEXT,
           raw_data TEXT,
+          remark TEXT,
           createdAt INTEGER NOT NULL,
           updatedAt INTEGER NOT NULL,
           PRIMARY KEY (id, groupId),

@@ -28,14 +28,47 @@ const migrateDatabase = () => {
           
           console.log('成功添加remark列到groups表');
           
-          // 继续检查traces表
-          checkTracesTable(resolve, reject);
+          // 继续检查models表
+          checkModelsTable(resolve, reject);
         });
       } else {
         console.log('remark列已存在，继续检查其他表');
-        checkTracesTable(resolve, reject);
+        checkModelsTable(resolve, reject);
       }
     });
+  });
+};
+
+// 检查models表是否需要迁移
+const checkModelsTable = (resolve, reject) => {
+  // 检查models表是否存在remark列
+  db.all("PRAGMA table_info(models)", [], (err, columns) => {
+    if (err) {
+      return reject(err);
+    }
+    
+    // 检查是否有remark列
+    const hasRemark = columns.some(col => col.name === 'remark');
+    
+    if (!hasRemark) {
+      console.log('需要添加remark列到models表...');
+      
+      // 添加remark列
+      db.run("ALTER TABLE models ADD COLUMN remark TEXT", (err) => {
+        if (err) {
+          console.error('添加remark列到models表失败:', err);
+          return reject(err);
+        }
+        
+        console.log('成功添加remark列到models表');
+        
+        // 继续检查traces表
+        checkTracesTable(resolve, reject);
+      });
+    } else {
+      console.log('models表remark列已存在，继续检查其他表');
+      checkTracesTable(resolve, reject);
+    }
   });
 };
 
