@@ -1,0 +1,53 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #2c3e50;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header .title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.action-bar {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.table-container {
+  margin-top: 20px;
+}
+
+.empty-data {
+  text-align: center;
+  padding: 40px 0;
+  color: #909399;
+}
+
+.page-container {
+  padding: 20px;
+}
+
+.form-footer {
+  margin-top: 20px;
+  text-align: right;
+}

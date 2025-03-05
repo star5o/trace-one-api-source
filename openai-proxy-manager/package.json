@@ -1,0 +1,21 @@
+{
+  "name": "openai-proxy-manager",
+  "version": "1.0.0",
+  "description": "OpenAI API代理管理系统",
+  "scripts": {
+    "start": "concurrently \"cd server && npm run dev\" \"cd client && npm run serve\"",
+    "build": "cd client && npm run build",
+    "docker:build": "docker build -t openai-proxy-manager .",
+    "docker:run": "docker run -p 80:80 openai-proxy-manager"
+  },
+  "keywords": [
+    "openai",
+    "proxy",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
