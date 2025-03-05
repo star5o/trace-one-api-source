@@ -38,7 +38,7 @@ class TraceController {
             content: [
               {
                 type: 'text',
-                text: `这是一个溯源测试，请查看图片。当前时间: ${new Date().toISOString()}`
+                text: '描述一下这张图片'
               },
               {
                 type: 'image_url',
