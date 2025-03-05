@@ -13,13 +13,19 @@
         <el-descriptions-item label="模型">{{ trace.model }}</el-descriptions-item>
         <el-descriptions-item label="请求时间">{{ formatDate(trace.requestTime) }}</el-descriptions-item>
         <el-descriptions-item label="响应时间">{{ formatDate(trace.responseTime) }}</el-descriptions-item>
-        <el-descriptions-item label="IP路径">{{ trace.ipPath || trace.ip }}</el-descriptions-item>
+        <el-descriptions-item label="初始IP">{{ trace.ip }}</el-descriptions-item>
         <el-descriptions-item label="用户代理">{{ trace.userAgent }}</el-descriptions-item>
       </el-descriptions>
       
       <el-divider />
       
       <el-tabs type="border-card">
+        <el-tab-pane label="IP路径">
+          <div class="code-block">
+            <pre v-if="trace.ipPath">{{ formatIpPath(trace.ipPath) }}</pre>
+            <pre v-else>{{ trace.ip }}</pre>
+          </div>
+        </el-tab-pane>
         <el-tab-pane label="请求体">
           <div class="code-block">
             <pre>{{ formatJson(trace.requestBody) }}</pre>
@@ -53,7 +59,7 @@ export default {
   },
   methods: {
     formatDate(timestamp) {
-      if (!timestamp) return '未知';
+      if (!timestamp) return '无数据';
       const date = new Date(parseInt(timestamp));
       return date.toLocaleString();
     },
@@ -61,19 +67,31 @@ export default {
       if (!json) return '无数据';
       
       try {
-        // 如果是字符串，尝试解析
-        const data = typeof json === 'string' ? JSON.parse(json) : json;
-        return JSON.stringify(data, null, 2);
-      } catch (e) {
-        // 如果解析失败，直接返回原始字符串
+        const parsed = typeof json === 'string' ? JSON.parse(json) : json;
+        return JSON.stringify(parsed, null, 2);
+      } catch (error) {
         return json;
       }
+    },
+    formatIpPath(ipPath) {
+      if (!ipPath) return '无数据';
+      
+      // 将IP路径格式化为更易读的形式
+      return ipPath.split('->').map((ip, index, array) => {
+        if (index === 0) return `初始IP: ${ip.trim()}`;
+        if (index === array.length - 1) return `最终IP: ${ip.trim()}`;
+        return `中转IP ${index}: ${ip.trim()}`;
+      }).join('\n');
     }
   }
 }
 </script>
 
 <style scoped>
+.trace-detail {
+  margin: 20px 0;
+}
+
 .trace-card {
   margin-bottom: 20px;
 }
@@ -86,14 +104,14 @@ export default {
 
 .code-block {
   background-color: #f5f7fa;
+  padding: 15px;
   border-radius: 4px;
-  padding: 12px;
   overflow-x: auto;
 }
 
-.code-block pre {
+pre {
   margin: 0;
-  font-family: monospace;
   white-space: pre-wrap;
+  word-wrap: break-word;
 }
 </style>
