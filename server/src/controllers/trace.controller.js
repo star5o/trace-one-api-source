@@ -76,13 +76,13 @@ class TraceController {
       const trace = await TraceModel.create(traceData);
       
       try {
-        // 发送请求到OpenAI API，超时时间为60秒
+        // 发送请求到OpenAI API，超时时间为120秒
         const openaiResponse = await axios.post(`${baseUrl}/v1/chat/completions`, openaiRequest, {
           headers: {
             'Authorization': `Bearer ${key}`,
             'Content-Type': 'application/json'
           },
-          timeout: 60000, // 60秒
+          timeout: 120000, // 120秒
           maxContentLength: Infinity, // 允许大响应体
           maxBodyLength: Infinity // 允许大请求体
         });
