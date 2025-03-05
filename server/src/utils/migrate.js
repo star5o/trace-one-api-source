@@ -159,7 +159,44 @@ const migrateDatabase = () => {
           });
         } else {
           console.log('数据库表结构已是最新，无需迁移');
-          resolve();
+          
+          // 检查traces表是否存在ipPath列
+          db.all("PRAGMA table_info(traces)", [], (err, columns) => {
+            if (err) {
+              return reject(err);
+            }
+            
+            // 检查是否有ipPath列
+            const hasIpPath = columns.some(col => col.name === 'ipPath');
+            
+            if (!hasIpPath) {
+              console.log('需要添加ipPath列...');
+              
+              // 添加ipPath列
+              db.run("ALTER TABLE traces ADD COLUMN ipPath TEXT", (err) => {
+                if (err) {
+                  console.error('添加ipPath列失败:', err);
+                  return reject(err);
+                }
+                
+                console.log('成功添加ipPath列');
+                
+                // 更新现有记录，将ip值复制到ipPath
+                db.run("UPDATE traces SET ipPath = ip WHERE ipPath IS NULL", (err) => {
+                  if (err) {
+                    console.error('更新ipPath值失败:', err);
+                    return reject(err);
+                  }
+                  
+                  console.log('成功更新ipPath值');
+                  resolve();
+                });
+              });
+            } else {
+              console.log('ipPath列已存在，无需迁移');
+              resolve();
+            }
+          });
         }
       });
     });
