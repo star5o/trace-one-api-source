@@ -14,6 +14,7 @@ class TraceModel {
         key,
         model,
         ip,
+        ipPath,
         userAgent,
         headers,
         requestBody,
@@ -24,9 +25,9 @@ class TraceModel {
       
       db.run(
         `INSERT INTO traces (
-          id, traceId, baseUrl, key, model, ip, userAgent, headers, 
+          id, traceId, baseUrl, key, model, ip, ipPath, userAgent, headers, 
           requestBody, responseBody, requestTime, responseTime, createdAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, 
           traceId, 
@@ -34,6 +35,7 @@ class TraceModel {
           key, 
           model, 
           ip, 
+          ipPath || ip, 
           userAgent, 
           headers ? JSON.stringify(headers) : null,
           requestBody ? JSON.stringify(requestBody) : null,
@@ -53,6 +55,7 @@ class TraceModel {
               key,
               model,
               ip,
+              ipPath: ipPath || ip,
               userAgent,
               headers: headers ? JSON.stringify(headers) : null,
               requestBody: requestBody ? JSON.stringify(requestBody) : null,
@@ -70,18 +73,43 @@ class TraceModel {
   // 更新溯源记录（例如添加响应时间和响应体）
   static update(traceId, updateData) {
     return new Promise((resolve, reject) => {
-      const { responseTime, responseBody } = updateData;
+      // 构建更新字段和参数
+      const updateFields = [];
+      const updateParams = [];
+      
+      if (updateData.responseTime !== undefined) {
+        updateFields.push('responseTime = ?');
+        updateParams.push(updateData.responseTime);
+      }
+      
+      if (updateData.responseBody !== undefined) {
+        updateFields.push('responseBody = ?');
+        updateParams.push(updateData.responseBody ? JSON.stringify(updateData.responseBody) : null);
+      }
+      
+      if (updateData.ipPath !== undefined) {
+        updateFields.push('ipPath = ?');
+        updateParams.push(updateData.ipPath);
+      }
+      
+      // 如果没有要更新的字段，直接返回
+      if (updateFields.length === 0) {
+        return resolve({ traceId });
+      }
+      
+      // 添加traceId作为WHERE条件的参数
+      updateParams.push(traceId);
       
       db.run(
-        'UPDATE traces SET responseTime = ?, responseBody = ? WHERE traceId = ?',
-        [responseTime, responseBody ? JSON.stringify(responseBody) : null, traceId],
+        `UPDATE traces SET ${updateFields.join(', ')} WHERE traceId = ?`,
+        updateParams,
         function(err) {
           if (err) {
             reject(err);
           } else if (this.changes === 0) {
             reject(new Error('溯源记录不存在'));
           } else {
-            resolve({ traceId, responseTime, responseBody });
+            resolve({ traceId, ...updateData });
           }
         }
       );

@@ -13,7 +13,7 @@
         <el-descriptions-item label="模型">{{ trace.model }}</el-descriptions-item>
         <el-descriptions-item label="请求时间">{{ formatDate(trace.requestTime) }}</el-descriptions-item>
         <el-descriptions-item label="响应时间">{{ formatDate(trace.responseTime) }}</el-descriptions-item>
-        <el-descriptions-item label="请求IP">{{ trace.ip }}</el-descriptions-item>
+        <el-descriptions-item label="IP路径">{{ trace.ipPath || trace.ip }}</el-descriptions-item>
         <el-descriptions-item label="用户代理">{{ trace.userAgent }}</el-descriptions-item>
       </el-descriptions>
       

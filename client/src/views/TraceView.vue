@@ -52,18 +52,20 @@
           {{ formatDate(scope.row.requestTime) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180">
+      <el-table-column label="响应时间" width="180">
         <template #default="scope">
-          <el-button type="text" @click.stop="viewTrace(scope.row)">查看</el-button>
-          <el-popconfirm
-            title="确定要删除这条溯源记录吗？"
-            @confirm="deleteTrace(scope.row.id)"
-            @click.stop
-          >
-            <template #reference>
-              <el-button type="text" style="color: #F56C6C;">删除</el-button>
-            </template>
-          </el-popconfirm>
+          {{ formatDate(scope.row.responseTime) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="IP路径" min-width="200">
+        <template #default="scope">
+          {{ scope.row.ipPath || scope.row.ip }}
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="120">
+        <template #default="scope">
+          <el-button type="primary" size="small" @click.stop="viewTrace(scope.row)">查看</el-button>
+          <el-button type="danger" size="small" @click.stop="deleteTrace(scope.row.id)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

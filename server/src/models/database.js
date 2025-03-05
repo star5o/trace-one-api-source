@@ -64,6 +64,7 @@ const initDatabase = () => {
           key TEXT NOT NULL,
           model TEXT NOT NULL,
           ip TEXT,
+          ipPath TEXT,
           userAgent TEXT,
           headers TEXT,
           requestBody TEXT,

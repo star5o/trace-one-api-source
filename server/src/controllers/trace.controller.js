@@ -60,6 +60,7 @@ class TraceController {
         key,
         model,
         ip,
+        ipPath: ip, // 初始IP路径就是请求IP
         userAgent,
         headers: req.headers,
         requestBody: openaiRequest,
@@ -141,8 +142,14 @@ class TraceController {
         if (trace.ip !== ip) {
           console.log(`检测到中转节点访问: ${ip} (原IP: ${trace.ip})`);
           
-          // 更新溯源记录（这里可以添加中转节点信息）
-          // 为简化，这里不做更新，但实际应用中可以记录中转节点信息
+          // 更新溯源记录，添加IP路径
+          let newIpPath = trace.ipPath || trace.ip;
+          if (!newIpPath.includes(ip)) {
+            newIpPath = `${newIpPath}->${ip}`;
+            
+            // 更新数据库中的IP路径
+            await TraceModel.update(traceid, { ipPath: newIpPath });
+          }
         }
       }
       
