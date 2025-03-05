@@ -9,6 +9,7 @@ const { migrateDatabase } = require('./utils/migrate');
 const proxyRoutes = require('./routes/proxy.routes');
 const groupRoutes = require('./routes/group.routes');
 const traceRoutes = require('./routes/trace.routes');
+const modelRoutes = require('./routes/model.routes');
 
 // 创建Express应用
 const app = express();
@@ -26,6 +27,7 @@ app.use(express.static(path.join(__dirname, '../../client/dist')));
 app.use('/api', proxyRoutes);
 app.use('/api', groupRoutes);
 app.use('/api', traceRoutes);
+app.use('/api', modelRoutes);
 
 // 前端路由处理
 app.get('*', (req, res) => {
