@@ -22,8 +22,8 @@ class TraceController {
       // 记录请求时间
       const requestTime = Date.now();
       
-      // 构建图片URL
-      const imageUrl = `${req.protocol}://${req.get('host')}/api/img?traceid=${traceId}`;
+      // 构建图片URL - 使用绝对URL
+      const imageUrl = `https://picsum.photos/100/100?traceid=${traceId}`;
       
       // 构建OpenAI API请求
       const openaiRequest = {
@@ -146,12 +146,8 @@ class TraceController {
         }
       }
       
-      // 返回一个随机颜色的1x1像素图片
-      const color = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-      const svg = `<svg width="1" height="1" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" fill="#${color}"/></svg>`;
-      
-      res.setHeader('Content-Type', 'image/svg+xml');
-      res.send(svg);
+      // 重定向到picsum.photos的随机图片
+      res.redirect('https://picsum.photos/100/100');
     } catch (error) {
       console.error('处理图片请求失败:', error);
       res.status(500).json({ message: '处理图片请求失败', error: error.message });
