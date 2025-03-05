@@ -106,7 +106,7 @@
                           <div class="model-remark">
                             <span>{{ scope.row.remark || '' }}</span>
                             <el-button type="text" @click.stop="editModelRemark(currentProxy, group, scope.row)">
-                              <el-icon><Edit /></el-icon>
+                              <Edit />
                             </el-button>
                           </div>
                         </template>
@@ -189,12 +189,16 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit } from '@element-plus/icons-vue'
+import axios from 'axios'
 import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ProxyList',
+  components: {
+    Edit
+  },
   setup() {
     const router = useRouter()
     
