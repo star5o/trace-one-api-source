@@ -22,8 +22,8 @@ class TraceController {
       // 记录请求时间
       const requestTime = Date.now();
       
-      // 构建图片URL - 使用绝对URL
-      const imageUrl = `https://picsum.photos/100/100?traceid=${traceId}`;
+      // 构建图片URL - 使用我们自己的图片API
+      const imageUrl = `${req.protocol}://${req.get('host')}/api/img?traceid=${traceId}`;
       
       // 构建OpenAI API请求
       const openaiRequest = {
@@ -146,8 +146,27 @@ class TraceController {
         }
       }
       
-      // 重定向到picsum.photos的随机图片
-      res.redirect('https://picsum.photos/100/100');
+      // 获取随机图片并返回
+      try {
+        const imageResponse = await axios.get('https://picsum.photos/200/300', {
+          responseType: 'arraybuffer',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        
+        if (!imageResponse.data) {
+          throw new Error('获取图片失败');
+        }
+        
+        // 设置响应头
+        res.setHeader('Content-Type', imageResponse.headers['content-type'] || 'image/jpeg');
+        res.setHeader('Cache-Control', 'no-store');
+        
+        // 返回图片数据
+        res.send(Buffer.from(imageResponse.data));
+      } catch (error) {
+        console.error('获取随机图片失败:', error);
+        res.status(500).json({ message: '获取随机图片失败', error: error.message });
+      }
     } catch (error) {
       console.error('处理图片请求失败:', error);
       res.status(500).json({ message: '处理图片请求失败', error: error.message });
