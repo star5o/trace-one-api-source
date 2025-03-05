@@ -1,13 +1,35 @@
 <template>
   <div class="app-container">
-    <el-container>
+    <el-container v-if="$route.meta.public">
+      <el-main style="padding: 0">
+        <router-view />
+      </el-main>
+    </el-container>
+    
+    <el-container v-else>
       <el-header>
         <div class="header-content">
           <h1>OpenAI API中转站管理系统</h1>
-          <el-menu mode="horizontal" :router="true" :default-active="activeRoute">
-            <el-menu-item index="/">中转站列表</el-menu-item>
-            <el-menu-item index="/trace">中转溯源</el-menu-item>
-          </el-menu>
+          <div class="header-right">
+            <el-menu mode="horizontal" :router="true" :default-active="activeRoute">
+              <el-menu-item index="/">中转站列表</el-menu-item>
+              <el-menu-item index="/trace">中转溯源</el-menu-item>
+            </el-menu>
+            
+            <div class="user-info" v-if="user">
+              <el-dropdown @command="handleCommand">
+                <span class="user-dropdown-link">
+                  {{ user.username }}
+                  <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </div>
         </div>
       </el-header>
       <el-main>
@@ -23,12 +45,48 @@
 </template>
 
 <script>
+import { computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { checkAuth, logout, getCurrentUser } from './store/auth';
+import { ArrowDown } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+
 export default {
   name: 'App',
-  computed: {
-    activeRoute() {
-      return this.$route.path
-    }
+  components: {
+    ArrowDown
+  },
+  setup() {
+    const router = useRouter();
+    const { user, isAuthenticated } = checkAuth();
+    
+    const activeRoute = computed(() => {
+      return router.currentRoute.value.path;
+    });
+    
+    // 处理下拉菜单命令
+    const handleCommand = async (command) => {
+      if (command === 'logout') {
+        const { success } = logout();
+        if (success) {
+          ElMessage.success('已退出登录');
+          router.push('/login');
+        }
+      }
+    };
+    
+    // 组件挂载时检查用户信息
+    onMounted(async () => {
+      if (isAuthenticated) {
+        await getCurrentUser();
+      }
+    });
+    
+    return {
+      user: computed(() => checkAuth().user),
+      activeRoute,
+      handleCommand
+    };
   }
 }
 </script>
@@ -50,6 +108,24 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.user-dropdown-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #409EFF;
 }
 
 .header-content h1 {

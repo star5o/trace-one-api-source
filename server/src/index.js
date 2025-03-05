@@ -10,6 +10,7 @@ const proxyRoutes = require('./routes/proxy.routes');
 const groupRoutes = require('./routes/group.routes');
 const traceRoutes = require('./routes/trace.routes');
 const modelRoutes = require('./routes/model.routes');
+const authRoutes = require('./routes/auth.routes');
 
 // 创建Express应用
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api', proxyRoutes);
 app.use('/api', groupRoutes);
 app.use('/api', traceRoutes);
 app.use('/api', modelRoutes);
+app.use('/api', authRoutes);
 
 // 前端路由处理
 app.get('*', (req, res) => {
