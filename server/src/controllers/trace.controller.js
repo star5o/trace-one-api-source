@@ -48,7 +48,9 @@ class TraceController {
               }
             ]
           }
-        ]
+        ],
+        // 不使用流式响应，因为我们需要完整的响应内容进行存储
+        stream: false
       };
       
       // 创建溯源记录
@@ -67,12 +69,15 @@ class TraceController {
       const trace = await TraceModel.create(traceData);
       
       try {
-        // 发送请求到OpenAI API
+        // 发送请求到OpenAI API，增加超时时间为120秒
         const openaiResponse = await axios.post(`${baseUrl}/v1/chat/completions`, openaiRequest, {
           headers: {
             'Authorization': `Bearer ${key}`,
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 30000, // 增加到120秒
+          maxContentLength: Infinity, // 允许大响应体
+          maxBodyLength: Infinity // 允许大请求体
         });
         
         // 记录响应时间和响应体
