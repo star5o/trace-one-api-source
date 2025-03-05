@@ -83,9 +83,9 @@
 </template>
 
 <script>
-import axios from 'axios';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import TraceDetail from '../components/TraceDetail.vue';
+import { apiClient } from '../utils/api';
 
 export default {
   name: 'TraceView',
@@ -151,7 +151,7 @@ export default {
       this.loading = true;
       
       try {
-        const response = await axios.post('/api/traces', this.form);
+        const response = await apiClient.post('/traces', this.form);
         this.currentTrace = response.data;
         ElMessage.success('溯源成功');
         this.fetchTraceHistory();
@@ -166,7 +166,7 @@ export default {
       this.historyLoading = true;
       
       try {
-        const response = await axios.get('/api/traces', {
+        const response = await apiClient.get('/traces', {
           params: {
             page: this.currentPage,
             limit: this.pageSize
@@ -183,7 +183,7 @@ export default {
     },
     async viewTrace(trace) {
       try {
-        const response = await axios.get(`/api/traces/${trace.id}`);
+        const response = await apiClient.get(`/traces/${trace.id}`);
         this.currentTrace = response.data;
       } catch (error) {
         console.error('获取溯源详情失败:', error);
@@ -192,7 +192,7 @@ export default {
     },
     async deleteTrace(id) {
       try {
-        await axios.delete(`/api/traces/${id}`);
+        await apiClient.delete(`/traces/${id}`);
         ElMessage.success('删除成功');
         
         // 如果删除的是当前查看的记录，清空当前记录
@@ -228,7 +228,7 @@ export default {
         
         // 逐个删除选中的记录
         const deletePromises = this.selectedTraces.map(trace => 
-          axios.delete(`/api/traces/${trace.id}`)
+          apiClient.delete(`/traces/${trace.id}`)
         );
         
         await Promise.all(deletePromises);

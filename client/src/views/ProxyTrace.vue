@@ -123,12 +123,12 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ProxyTrace',
   setup() {
     const route = useRoute()
-    const API_BASE_URL = 'http://localhost:3000/api'
     
     const traceFormRef = ref(null)
     const traceForm = reactive({
@@ -183,7 +183,7 @@ export default {
           traceLoading.value = true
           
           try {
-            const response = await axios.post(`${API_BASE_URL}/traces`, {
+            const response = await apiClient.post('/traces', {
               baseUrl: traceForm.baseUrl,
               key: traceForm.key,
               model: traceForm.model
@@ -218,7 +218,7 @@ export default {
     // 获取溯源历史
     const fetchTraceHistory = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/traces`, {
+        const response = await apiClient.get('/traces', {
           params: {
             page: currentPage.value,
             limit: pageSize.value
@@ -236,7 +236,7 @@ export default {
     // 查看溯源详情
     const viewTraceDetail = async (trace) => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/traces/${trace.id}`)
+        const response = await apiClient.get(`/traces/${trace.id}`)
         traceDetailDialog.data = response.data
         traceDetailDialog.visible = true
       } catch (error) {

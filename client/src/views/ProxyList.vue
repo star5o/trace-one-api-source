@@ -177,12 +177,12 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ProxyList',
   setup() {
     const router = useRouter()
-    const API_BASE_URL = 'http://localhost:3000/api'
     
     const proxyList = ref([])
     const currentProxy = ref(null)
@@ -245,7 +245,7 @@ export default {
     // 获取中转站列表
     const fetchProxyList = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/proxies`)
+        const response = await apiClient.get('/proxies')
         proxyList.value = response.data
       } catch (error) {
         console.error('获取中转站列表失败:', error)
@@ -309,14 +309,14 @@ export default {
           try {
             if (proxyDialog.isEdit) {
               // 编辑中转站
-              await axios.put(`${API_BASE_URL}/proxies/${proxyForm.id}`, {
+              await apiClient.put(`/proxies/${proxyForm.id}`, {
                 name: proxyForm.name,
                 baseUrl: proxyForm.baseUrl
               })
               ElMessage.success('中转站更新成功')
             } else {
               // 添加中转站
-              await axios.post(`${API_BASE_URL}/proxies`, {
+              await apiClient.post('/proxies', {
                 name: proxyForm.name,
                 baseUrl: proxyForm.baseUrl
               })
@@ -344,7 +344,7 @@ export default {
         }
       ).then(async () => {
         try {
-          await axios.delete(`${API_BASE_URL}/proxies/${proxy.id}`)
+          await apiClient.delete(`/proxies/${proxy.id}`)
           ElMessage.success('中转站删除成功')
           fetchProxyList()
           if (proxyDetailDrawer.visible && currentProxy.value && currentProxy.value.id === proxy.id) {
@@ -388,14 +388,14 @@ export default {
           try {
             if (groupDialog.isEdit) {
               // 编辑分组
-              await axios.put(`${API_BASE_URL}/groups/${groupForm.id}`, {
+              await apiClient.put(`/groups/${groupForm.id}`, {
                 name: groupForm.name,
                 key: groupForm.key
               })
               ElMessage.success('分组更新成功')
             } else {
               // 添加分组
-              await axios.post(`${API_BASE_URL}/groups`, {
+              await apiClient.post('/groups', {
                 proxyId: groupForm.proxyId,
                 name: groupForm.name,
                 key: groupForm.key
@@ -406,7 +406,7 @@ export default {
             fetchProxyList()
             // 更新当前显示的中转站详情
             if (currentProxy.value) {
-              const response = await axios.get(`${API_BASE_URL}/proxies/${currentProxy.value.id}`)
+              const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
               currentProxy.value = response.data
             }
           } catch (error) {
@@ -429,12 +429,12 @@ export default {
         }
       ).then(async () => {
         try {
-          await axios.delete(`${API_BASE_URL}/groups/${group.id}`)
+          await apiClient.delete(`/groups/${group.id}`)
           ElMessage.success('分组删除成功')
           fetchProxyList()
           // 更新当前显示的中转站详情
           if (currentProxy.value) {
-            const response = await axios.get(`${API_BASE_URL}/proxies/${currentProxy.value.id}`)
+            const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
             currentProxy.value = response.data
           }
         } catch (error) {
@@ -450,12 +450,12 @@ export default {
     const refreshModels = async (proxy, group) => {
       try {
         ElMessage.info('正在刷新模型列表，请稍候...')
-        await axios.post(`${API_BASE_URL}/groups/${group.id}/refresh-models`)
+        await apiClient.post(`/groups/${group.id}/refresh-models`)
         ElMessage.success('模型列表刷新成功')
         fetchProxyList()
         // 更新当前显示的中转站详情
         if (currentProxy.value) {
-          const response = await axios.get(`${API_BASE_URL}/proxies/${currentProxy.value.id}`)
+          const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
           currentProxy.value = response.data
         }
       } catch (error) {

@@ -88,13 +88,13 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ModelDetail',
   setup() {
     const route = useRoute()
     const router = useRouter()
-    const API_BASE_URL = 'http://localhost:3000/api'
     
     const proxyId = route.params.proxyId
     const groupId = route.params.groupId
@@ -124,7 +124,7 @@ export default {
     // 获取中转站和分组信息
     const fetchProxyAndGroupInfo = async () => {
       try {
-        const proxyResponse = await axios.get(`${API_BASE_URL}/proxies/${proxyId}`)
+        const proxyResponse = await apiClient.get(`/proxies/${proxyId}`)
         proxyName.value = proxyResponse.data.name
         
         const group = proxyResponse.data.groups.find(g => g.id === groupId)
@@ -140,7 +140,7 @@ export default {
     // 获取溯源记录
     const fetchTraceRecords = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/traces/model/${modelId}`, {
+        const response = await apiClient.get(`/traces/model/${modelId}`, {
           params: {
             page: currentPage.value,
             limit: pageSize.value
@@ -160,7 +160,7 @@ export default {
     // 查看溯源详情
     const viewTraceDetail = async (trace) => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/traces/${trace.id}`)
+        const response = await apiClient.get(`/traces/${trace.id}`)
         traceDetailDialog.data = response.data
         traceDetailDialog.visible = true
       } catch (error) {
