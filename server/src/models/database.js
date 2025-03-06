@@ -90,7 +90,7 @@ const initDatabase = () => {
       `);
       
       // 检查是否需要添加 groupName 列（兼容旧版本）
-      db.get("PRAGMA table_info(traces)", (err, rows) => {
+      db.all("PRAGMA table_info(traces)", [], (err, rows) => {
         if (err) {
           console.error('检查traces表结构失败:', err);
         } else {
