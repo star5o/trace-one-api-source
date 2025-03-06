@@ -1,15 +1,12 @@
 <template>
   <div class="proxy-list page-container">
-    <div class="page-header">
-      <h1 class="page-title">中转站列表</h1>
-      <div class="page-actions">
-        <a-button type="primary" @click="openAddProxyDialog" class="add-button">
-          <template #icon><plus-outlined /></template>
-          添加中转站
-        </a-button>
-      </div>
-    </div>
-    <a-card class="main-card" :bordered="false">
+    <a-card>
+      <template #title>
+        <div class="card-header">
+          <span class="title">中转站列表</span>
+          <a-button type="primary" @click="openAddProxyDialog">添加中转站</a-button>
+        </div>
+      </template>
       
       <div v-if="proxyList.length === 0" class="empty-data">
         <a-empty description="暂无中转站数据" />
@@ -200,15 +197,14 @@
 import { ref, reactive, onMounted, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
-import { EditOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { EditOutlined } from '@ant-design/icons-vue'
 import axios from 'axios'
 import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ProxyList',
   components: {
-    EditOutlined,
-    PlusOutlined
+    EditOutlined
   },
   setup() {
     const router = useRouter()
@@ -689,114 +685,20 @@ export default {
 </script>
 
 <style scoped>
-/* 页面布局 */
-.page-container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-  position: relative;
-}
-
-.page-title::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  width: 40px;
-  height: 3px;
-  background: var(--primary-color);
-  border-radius: 3px;
-}
-
-.page-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.add-button {
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  height: 38px;
-  padding: 0 16px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-}
-
-.add-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* 卡片样式 */
-.main-card {
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
-}
-
-:deep(.ant-card-body) {
-  padding: 24px;
-}
-
-/* 表格样式 */
 .proxy-table, .group-table, .model-table {
   margin-top: 20px;
 }
-
-:deep(.ant-table) {
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-:deep(.ant-table-thead > tr > th) {
-  background-color: rgba(59, 130, 246, 0.05);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-:deep(.ant-table-tbody > tr > td) {
-  border-bottom: 1px solid var(--border-color);
-}
-
-:deep(.ant-table-tbody > tr:hover > td) {
-  background-color: rgba(59, 130, 246, 0.05);
-}
-
-:deep(.ant-table-tbody > tr:last-child > td) {
-  border-bottom: none;
-}
-
-:deep(.ant-btn) {
-  border-radius: var(--radius-md);
-  transition: all 0.2s;
-}
-
-:deep(.ant-btn:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
 .model-remark {
   display: flex;
   align-items: center;
 }
-
 .model-remark .ant-btn {
   margin-left: 10px;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* 中转站详情模态对话框样式 */
@@ -808,34 +710,12 @@ export default {
   height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-:deep(.ant-modal-header) {
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-white);
-}
-
-:deep(.ant-modal-title) {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
 :deep(.ant-modal-body) {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  background-color: var(--bg-light);
-}
-
-:deep(.ant-modal-footer) {
-  border-top: 1px solid var(--border-color);
-  padding: 12px 24px;
-  background-color: var(--bg-white);
 }
 
 .proxy-detail-content {
@@ -844,90 +724,23 @@ export default {
   height: 100%;
 }
 
-:deep(.ant-tabs) {
-  background-color: var(--bg-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: 16px;
-}
-
 .proxy-detail-content .ant-tabs {
   flex: 1;
-}
-
-:deep(.ant-tabs-tab) {
-  padding: 8px 16px;
-  transition: all 0.2s;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  margin-right: 4px;
-}
-
-:deep(.ant-tabs-tab-active) {
-  background-color: #f0f7ff;
-}
-
-:deep(.ant-tabs-tab:hover) {
-  color: var(--primary-color);
-}
-
-:deep(.ant-tabs-ink-bar) {
-  background-color: var(--primary-color);
-  height: 3px;
-  border-radius: 3px 3px 0 0;
-}
-
-:deep(.ant-descriptions) {
-  background-color: var(--bg-white);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-}
-
-:deep(.ant-descriptions-item-label) {
-  background-color: rgba(59, 130, 246, 0.05);
-  font-weight: 500;
-}
-
-:deep(.ant-collapse) {
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-white);
-}
-
-:deep(.ant-collapse-header) {
-  font-weight: 500;
-  padding: 12px 16px !important;
-  background-color: rgba(59, 130, 246, 0.05);
-}
-
-:deep(.ant-collapse-content) {
-  border-top: 1px solid var(--border-color);
 }
 
 .modal-footer {
   margin-top: 24px;
   text-align: right;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid #f0f0f0;
   padding-top: 16px;
 }
 
 .empty-data {
-  padding: 32px 0;
+  padding: 20px 0;
   text-align: center;
-  background-color: var(--bg-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
-
-:deep(.ant-empty-description) {
-  color: var(--text-secondary);
-  font-size: 14px;
 }
 
 .action-bar {
   margin-bottom: 16px;
-  display: flex;
-  justify-content: flex-end;
 }
 </style>
