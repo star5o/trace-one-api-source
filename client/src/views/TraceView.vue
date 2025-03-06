@@ -179,6 +179,10 @@ export default {
       if (urlParams.has('model')) {
         this.form.model = urlParams.get('model');
       }
+      
+      if (urlParams.has('groupName')) {
+        this.form.groupName = urlParams.get('groupName');
+      }
     },
     async startTrace() {
       if (!this.form.baseUrl || !this.form.key || !this.form.model) {

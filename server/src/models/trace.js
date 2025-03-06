@@ -247,21 +247,36 @@ class TraceModel {
   }
 
   // 根据模型ID获取溯源记录
-  static getByModel(modelId, page = 1, limit = 10) {
+  static getByModel(modelId, page = 1, limit = 10, groupName = null) {
     return new Promise((resolve, reject) => {
       const offset = (page - 1) * limit;
       
+      // 构建查询条件和参数
+      let countQuery = 'SELECT COUNT(*) as total FROM traces WHERE model = ?';
+      let dataQuery = 'SELECT * FROM traces WHERE model = ?';
+      const queryParams = [modelId];
+      
+      // 如果指定了分组名称，添加过滤条件
+      if (groupName) {
+        countQuery += ' AND groupName = ?';
+        dataQuery += ' AND groupName = ?';
+        queryParams.push(groupName);
+      }
+      
       // 获取总记录数
-      db.get('SELECT COUNT(*) as total FROM traces WHERE model = ?', [modelId], (err, result) => {
+      db.get(countQuery, queryParams, (err, result) => {
         if (err) {
           reject(err);
         } else {
           const total = result.total;
           
+          // 添加排序和分页
+          dataQuery += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
+          
           // 获取分页数据
           db.all(
-            'SELECT * FROM traces WHERE model = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
-            [modelId, limit, offset],
+            dataQuery,
+            [...queryParams, limit, offset],
             (err, traces) => {
               if (err) {
                 reject(err);

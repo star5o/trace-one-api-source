@@ -248,8 +248,9 @@ class TraceController {
       const { modelId } = req.params;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
+      const groupName = req.query.groupName || null; // 获取分组名称参数
       
-      const traces = await TraceModel.getByModel(modelId, page, limit);
+      const traces = await TraceModel.getByModel(modelId, page, limit, groupName);
       res.json(traces);
     } catch (error) {
       console.error('获取模型溯源记录失败:', error);

@@ -127,8 +127,11 @@ export default {
     const groupId = route.params.groupId
     const modelId = route.params.modelId
     
+    // 从查询参数中获取分组名称
+    const urlGroupName = route.query.groupName
+    
     const proxyName = ref('')
-    const groupName = ref('')
+    const groupName = ref(urlGroupName || '')
     
     const loading = ref(true)
     const traceRecords = ref([])
@@ -170,7 +173,8 @@ export default {
         const response = await apiClient.get(`/traces/model/${modelId}`, {
           params: {
             page: currentPage.value,
-            limit: pageSize.value
+            limit: pageSize.value,
+            groupName: groupName.value // 添加分组名称参数
           }
         })
         

@@ -592,14 +592,30 @@ export default {
         query: {
           baseUrl: proxy.baseUrl,
           key: group.key,
-          model: model.id
+          model: model.id,
+          groupName: group.name
         }
       })
     }
     
     // 查看模型详情
     const viewModelDetail = (proxyId, groupId, modelId) => {
-      router.push(`/model-detail/${proxyId}/${groupId}/${modelId}`)
+      // 找到当前代理和分组
+      const proxy = proxyList.value.find(p => p.id === proxyId);
+      if (proxy) {
+        const group = proxy.groups.find(g => g.id === groupId);
+        if (group) {
+          router.push({
+            path: `/model-detail/${proxyId}/${groupId}/${modelId}`,
+            query: {
+              groupName: group.name
+            }
+          });
+          return;
+        }
+      }
+      // 如果找不到分组信息，使用原来的方式
+      router.push(`/model-detail/${proxyId}/${groupId}/${modelId}`);
     }
     
     // 编辑模型备注
