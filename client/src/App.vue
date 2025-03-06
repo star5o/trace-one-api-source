@@ -9,7 +9,7 @@
     <el-container v-else>
       <el-header>
         <div class="header-content">
-          <h1>OpenAI API中转站管理系统</h1>
+          <h1>LLM API中转站管理系统</h1>
           <div class="header-right">
             <el-menu mode="horizontal" :router="true" :default-active="activeRoute">
               <el-menu-item index="/">中转站列表</el-menu-item>
@@ -37,7 +37,7 @@
       </el-main>
       <el-footer>
         <div class="footer-content">
-          <p>© {{ new Date().getFullYear() }} OpenAI API中转站管理系统</p>
+          <p>© {{ new Date().getFullYear() }} LLM API中转站管理系统 by star5o</p>
         </div>
       </el-footer>
     </el-container>

@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const path = require('path');
 const { initDatabase } = require('./models/database');
 const { migrateDatabase } = require('./utils/migrate');
+const { authenticateToken } = require('./middlewares/auth.middleware');
 
 // 导入路由
 const proxyRoutes = require('./routes/proxy.routes');
@@ -24,7 +25,22 @@ app.use(morgan('dev'));
 // 静态文件
 app.use(express.static(path.join(__dirname, '../../client/dist')));
 
-// API路由
+// 创建一个中间件来处理除了登录和图片请求外的所有API请求
+const authMiddleware = (req, res, next) => {
+  // 如果是登录请求或图片请求，则跳过认证
+  if ((req.path === '/auth/login' && req.method === 'POST') || 
+      (req.path === '/img' && req.method === 'GET')) {
+    return next();
+  }
+  
+  // 其他请求需要认证
+  return authenticateToken(req, res, next);
+};
+
+// 应用认证中间件到所有API路由
+app.use('/api', authMiddleware);
+
+// 注册所有路由
 app.use('/api', proxyRoutes);
 app.use('/api', groupRoutes);
 app.use('/api', traceRoutes);
