@@ -189,7 +189,15 @@ export default {
       this.loading = true;
       
       try {
-        const response = await apiClient.post('/traces', this.form);
+        // 明确地将 groupName 字段包含在请求中
+        const requestData = {
+          baseUrl: this.form.baseUrl,
+          key: this.form.key,
+          model: this.form.model,
+          groupName: this.form.groupName || ''
+        };
+        
+        const response = await apiClient.post('/traces', requestData);
         this.currentTrace = response.data;
         message.success('溯源成功');
         this.fetchTraceHistory();
