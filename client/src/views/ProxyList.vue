@@ -31,12 +31,21 @@
       </div>
     </a-card>
 
-    <!-- 中转站详情抽屉 -->
-    <a-drawer v-model:open="proxyDetailDrawer.visible" :title="proxyDetailDrawer.title" width="50%">
-      <div v-if="currentProxy">
+    <!-- 中转站详情对话框 -->
+    <a-modal 
+      v-model:open="proxyDetailDrawer.visible" 
+      :title="proxyDetailDrawer.title" 
+      width="90%"
+      style="top: 20px"
+      :footer="null"
+      :destroyOnClose="false"
+      :maskClosable="false"
+      class="proxy-detail-modal"
+    >
+      <div v-if="currentProxy" class="proxy-detail-content">
         <a-tabs v-model:activeKey="proxyDetailDrawer.activeTab">
           <a-tab-pane key="info" tab="基本信息">
-            <a-descriptions :column="1" bordered>
+            <a-descriptions :column="2" bordered>
               <a-descriptions-item label="名称">{{ currentProxy.name }}</a-descriptions-item>
               <a-descriptions-item label="Base URL">{{ currentProxy.baseUrl }}</a-descriptions-item>
               <a-descriptions-item label="创建时间">{{ formatDate(currentProxy.createdAt) }}</a-descriptions-item>
@@ -54,7 +63,12 @@
             </div>
             
             <div v-else class="group-table">
-              <a-table :dataSource="currentProxy.groups" :columns="groupColumns" bordered>
+              <a-table 
+                :dataSource="currentProxy.groups" 
+                :columns="groupColumns" 
+                :scroll="{ x: 'max-content' }" 
+                bordered
+              >
                 <template #bodyCell="{ column, record }">
                   <template v-if="column.key === 'modelCount'">
                     {{ record.models ? record.models.length : 0 }}
@@ -86,7 +100,12 @@
                   </div>
                   
                   <div v-else class="model-table">
-                    <a-table :dataSource="group.models" :columns="modelColumns" bordered>
+                    <a-table 
+                      :dataSource="group.models" 
+                      :columns="modelColumns" 
+                      :scroll="{ x: 'max-content' }" 
+                      bordered
+                    >
                       <template #bodyCell="{ column, record }">
                         <template v-if="column.key === 'created'">
                           {{ formatDate(record.created * 1000) }}
@@ -107,8 +126,11 @@
             </div>
           </a-tab-pane>
         </a-tabs>
+        <div class="modal-footer">
+          <a-button type="primary" @click="proxyDetailDrawer.visible = false">关闭</a-button>
+        </div>
       </div>
-    </a-drawer>
+    </a-modal>
 
     <!-- 添加/编辑中转站对话框 -->
     <a-modal 
@@ -677,5 +699,48 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* 中转站详情模态对话框样式 */
+.proxy-detail-modal {
+  max-width: 95%;
+}
+
+:deep(.ant-modal-content) {
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.ant-modal-body) {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.proxy-detail-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.proxy-detail-content .ant-tabs {
+  flex: 1;
+}
+
+.modal-footer {
+  margin-top: 24px;
+  text-align: right;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.empty-data {
+  padding: 20px 0;
+  text-align: center;
+}
+
+.action-bar {
+  margin-bottom: 16px;
 }
 </style>
