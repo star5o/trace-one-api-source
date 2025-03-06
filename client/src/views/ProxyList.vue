@@ -497,7 +497,7 @@ export default {
       currentProxy.value = proxy;
       proxyDetailDrawer.title = `${proxy.name} 详情`;
       proxyDetailDrawer.visible = true;
-      proxyDetailDrawer.activeTab = "info";
+      proxyDetailDrawer.activeTab = "models"; // 默认打开模型列表面板
     };
 
     // 打开添加中转站对话框
