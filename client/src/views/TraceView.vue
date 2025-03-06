@@ -2,90 +2,82 @@
   <div class="trace-container">
     <h1>OpenAI API 溯源</h1>
     
-    <el-card class="trace-form">
-      <el-form :model="form" label-width="120px" @submit.prevent="startTrace">
-        <el-form-item label="中转站URL" required>
-          <el-input v-model="form.baseUrl" placeholder="例如: https://api.example.com"></el-input>
-        </el-form-item>
-        <el-form-item label="API Key" required>
-          <el-input v-model="form.key" placeholder="输入API Key" show-password></el-input>
-        </el-form-item>
-        <el-form-item label="模型" required>
-          <el-input v-model="form.model" placeholder="例如: gpt-4o"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="startTrace" :loading="loading">开始溯源</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <a-card class="trace-form">
+      <a-form :model="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }" @submit.prevent="startTrace">
+        <a-form-item label="中转站URL" required>
+          <a-input v-model:value="form.baseUrl" placeholder="例如: https://api.example.com" />
+        </a-form-item>
+        <a-form-item label="API Key" required>
+          <a-input-password v-model:value="form.key" placeholder="输入API Key" />
+        </a-form-item>
+        <a-form-item label="模型" required>
+          <a-input v-model:value="form.model" placeholder="例如: gpt-4o" />
+        </a-form-item>
+        <a-form-item :wrapper-col="{ offset: 4, span: 20 }">
+          <a-button type="primary" @click="startTrace" :loading="loading">开始溯源</a-button>
+        </a-form-item>
+      </a-form>
+    </a-card>
     
-    <el-divider content-position="center">溯源结果</el-divider>
+    <a-divider>溯源结果</a-divider>
     
     <TraceDetail :trace="currentTrace" />
     
-    <el-divider content-position="center">历史记录</el-divider>
+    <a-divider>历史记录</a-divider>
     
     <div class="trace-history-header">
       <h3>溯源历史记录</h3>
-      <el-button 
+      <a-button 
         type="danger" 
         :disabled="selectedTraces.length === 0" 
         @click="deleteSelectedTraces"
       >
         删除选中记录
-      </el-button>
+      </a-button>
     </div>
     
-    <el-table
-      v-loading="historyLoading"
-      :data="traceHistory.items"
+    <a-table
+      :loading="historyLoading"
+      :dataSource="traceHistory.items"
+      :columns="columns"
+      :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
       style="width: 100%"
       @row-click="handleRowClick"
-      @selection-change="handleSelectionChange"
     >
-      <el-table-column type="selection" width="55"></el-table-column>
-      <el-table-column prop="id" label="ID" width="280"></el-table-column>
-      <el-table-column prop="baseUrl" label="中转站URL"></el-table-column>
-      <el-table-column prop="model" label="模型"></el-table-column>
-      <el-table-column label="请求时间" width="180">
-        <template #default="scope">
-          {{ formatDate(scope.row.requestTime) }}
+      <template #bodyCell="{ column, record }">
+        <template v-if="column.key === 'requestTime'">
+          {{ formatDate(record.requestTime) }}
         </template>
-      </el-table-column>
-      <el-table-column label="响应时间" width="180">
-        <template #default="scope">
-          {{ formatDate(scope.row.responseTime) }}
+        <template v-if="column.key === 'responseTime'">
+          {{ formatDate(record.responseTime) }}
         </template>
-      </el-table-column>
-      <el-table-column label="IP路径" min-width="200">
-        <template #default="scope">
-          {{ scope.row.ipPath || scope.row.ip }}
+        <template v-if="column.key === 'ipPath'">
+          {{ record.ipPath || record.ip }}
         </template>
-      </el-table-column>
-      <el-table-column label="操作" width="120">
-        <template #default="scope">
-          <el-button type="primary" size="small" @click.stop="viewTrace(scope.row)">查看</el-button>
-          <el-button type="danger" size="small" @click.stop="deleteTrace(scope.row.id)">删除</el-button>
+        <template v-if="column.key === 'action'">
+          <a-button type="primary" size="small" @click.stop="viewTrace(record)">查看</a-button>
+          <a-button type="danger" size="small" style="margin-left: 8px" @click.stop="deleteTrace(record.id)">删除</a-button>
         </template>
-      </el-table-column>
-    </el-table>
+      </template>
+    </a-table>
     
     <div class="pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
+      <a-pagination
+        v-model:current="currentPage"
+        v-model:pageSize="pageSize"
         :total="traceHistory.total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      ></el-pagination>
+        :pageSizeOptions="['10', '20', '50', '100']"
+        showSizeChanger
+        @change="handlePageChange"
+        @showSizeChange="handleSizeChange"
+        show-total
+      />
     </div>
   </div>
 </template>
 
 <script>
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { message, Modal } from 'ant-design-vue';
 import TraceDetail from '../components/TraceDetail.vue';
 import { apiClient } from '../utils/api';
 
@@ -112,7 +104,49 @@ export default {
       historyLoading: false,
       currentPage: 1,
       pageSize: 10,
-      selectedTraces: []
+      selectedTraces: [],
+      selectedRowKeys: [],
+      columns: [
+        {
+          title: 'ID',
+          dataIndex: 'id',
+          key: 'id',
+          width: 280
+        },
+        {
+          title: '中转站URL',
+          dataIndex: 'baseUrl',
+          key: 'baseUrl'
+        },
+        {
+          title: '模型',
+          dataIndex: 'model',
+          key: 'model'
+        },
+        {
+          title: '请求时间',
+          dataIndex: 'requestTime',
+          key: 'requestTime',
+          width: 180
+        },
+        {
+          title: '响应时间',
+          dataIndex: 'responseTime',
+          key: 'responseTime',
+          width: 180
+        },
+        {
+          title: 'IP路径',
+          dataIndex: 'ipPath',
+          key: 'ipPath',
+          minWidth: 200
+        },
+        {
+          title: '操作',
+          key: 'action',
+          width: 120
+        }
+      ]
     };
   },
   created() {
@@ -139,7 +173,7 @@ export default {
     },
     async startTrace() {
       if (!this.form.baseUrl || !this.form.key || !this.form.model) {
-        ElMessage.warning('请填写所有必填字段');
+        message.warning('请填写所有必填字段');
         return;
       }
       
@@ -148,11 +182,11 @@ export default {
       try {
         const response = await apiClient.post('/traces', this.form);
         this.currentTrace = response.data;
-        ElMessage.success('溯源成功');
+        message.success('溯源成功');
         this.fetchTraceHistory();
       } catch (error) {
         console.error('溯源失败:', error);
-        ElMessage.error('溯源失败: ' + (error.response?.data?.message || error.message));
+        message.error('溯源失败: ' + (error.response?.data?.message || error.message));
       } finally {
         this.loading = false;
       }
@@ -171,7 +205,7 @@ export default {
         this.traceHistory = response.data;
       } catch (error) {
         console.error('获取溯源历史失败:', error);
-        ElMessage.error('获取溯源历史失败: ' + (error.response?.data?.message || error.message));
+        message.error('获取溯源历史失败: ' + (error.response?.data?.message || error.message));
       } finally {
         this.historyLoading = false;
       }
@@ -182,13 +216,13 @@ export default {
         this.currentTrace = response.data;
       } catch (error) {
         console.error('获取溯源详情失败:', error);
-        ElMessage.error('获取溯源详情失败: ' + (error.response?.data?.message || error.message));
+        message.error('获取溯源详情失败: ' + (error.response?.data?.message || error.message));
       }
     },
     async deleteTrace(id) {
       try {
         await apiClient.delete(`/traces/${id}`);
-        ElMessage.success('删除成功');
+        message.success('删除成功');
         
         // 如果删除的是当前查看的记录，清空当前记录
         if (this.currentTrace && this.currentTrace.id === id) {
@@ -199,11 +233,12 @@ export default {
         this.fetchTraceHistory();
       } catch (error) {
         console.error('删除溯源记录失败:', error);
-        ElMessage.error('删除失败: ' + (error.response?.data?.message || error.message));
+        message.error('删除失败: ' + (error.response?.data?.message || error.message));
       }
     },
-    handleSelectionChange(selection) {
-      this.selectedTraces = selection;
+    onSelectChange(selectedRowKeys, selectedRows) {
+      this.selectedRowKeys = selectedRowKeys;
+      this.selectedTraces = selectedRows;
     },
     async deleteSelectedTraces() {
       if (this.selectedTraces.length === 0) {
@@ -211,15 +246,16 @@ export default {
       }
       
       try {
-        await ElMessageBox.confirm(
-          `确定要删除选中的 ${this.selectedTraces.length} 条记录吗？`,
-          '删除确认',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        );
+        await new Promise((resolve, reject) => {
+          Modal.confirm({
+            title: '删除确认',
+            content: `确定要删除选中的 ${this.selectedTraces.length} 条记录吗？`,
+            okText: '确定',
+            cancelText: '取消',
+            onOk: () => resolve(),
+            onCancel: () => reject('cancel')
+          });
+        });
         
         // 逐个删除选中的记录
         const deletePromises = this.selectedTraces.map(trace => 
@@ -228,7 +264,7 @@ export default {
         
         await Promise.all(deletePromises);
         
-        ElMessage.success(`成功删除 ${this.selectedTraces.length} 条记录`);
+        message.success(`成功删除 ${this.selectedTraces.length} 条记录`);
         
         // 如果当前查看的记录在删除列表中，清空当前记录
         if (this.currentTrace && this.selectedTraces.some(t => t.id === this.currentTrace.id)) {
@@ -241,18 +277,19 @@ export default {
       } catch (error) {
         if (error !== 'cancel') {
           console.error('批量删除失败:', error);
-          ElMessage.error('批量删除失败: ' + (error.response?.data?.message || error.message));
+          message.error('批量删除失败: ' + (error.response?.data?.message || error.message));
         }
       }
     },
     handleRowClick(row) {
       this.viewTrace(row);
     },
-    handleSizeChange(size) {
+    handleSizeChange(page, size) {
       this.pageSize = size;
+      this.currentPage = 1; // 当改变每页条数时，重置为第一页
       this.fetchTraceHistory();
     },
-    handleCurrentChange(page) {
+    handlePageChange(page, pageSize) {
       this.currentPage = page;
       this.fetchTraceHistory();
     },

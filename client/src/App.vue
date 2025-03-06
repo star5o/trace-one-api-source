@@ -354,28 +354,6 @@ body {
   margin-left: 8px;
 }
 
-/* 主内容区样式 */
-.el-main {
-  background-color: var(--bg-white);
-  color: var(--text-primary);
-  padding: 20px;
-  flex: 1;
-  overflow-y: auto;
-  box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-sm);
-  margin: 15px;
-}
-
-/* 页脚样式 */
-.el-footer {
-  background-color: var(--bg-white);
-  color: var(--text-secondary);
-  text-align: center;
-  line-height: 40px;
-  font-size: 12px;
-  box-shadow: var(--shadow-sm);
-  margin-top: auto;
-}
 
 .footer-divider {
   margin: 0 8px;
@@ -396,84 +374,5 @@ body {
   margin: 0;
 }
 
-/* 对话框样式 */
-.el-dialog {
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
 
-.el-dialog__header {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 15px 20px;
-}
-
-.el-dialog__title {
-  color: white;
-  font-weight: 600;
-}
-
-.el-dialog__headerbtn .el-dialog__close {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.el-dialog__body {
-  padding: 30px 24px;
-}
-
-.el-dialog__footer {
-  padding: 16px 24px;
-  border-top: 1px solid #ebeef5;
-}
-
-/* 表单样式 */
-.el-form-item__label {
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.el-input__inner {
-  border-radius: var(--radius-sm);
-  transition: var(--transition);
-}
-
-.el-input__inner:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.2);
-}
-
-/* 按钮样式 */
-.el-button {
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  transition: var(--transition);
-}
-
-.el-button--primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.el-button--primary:hover, 
-.el-button--primary:focus {
-  background-color: var(--primary-light);
-  border-color: var(--primary-light);
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .el-header {
-    padding: 0 15px;
-  }
-  
-  .header-content h1 {
-    font-size: 1.2rem;
-  }
-  
-  .el-main {
-    padding: 15px;
-    margin: 10px;
-  }
-}
 </style>

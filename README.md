@@ -12,7 +12,7 @@
 
 ## 技术栈
 
-- 前端：Vue 3 + Vue Router + Element Plus + Axios
+- 前端：Vue 3 + Vue Router + Ant Design Vue + Axios
 - 后端：Express + SQLite
 - 构建工具：Vite
 - 容器化：Docker + Nginx
