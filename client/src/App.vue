@@ -37,7 +37,7 @@
     <el-container v-else>
       <el-header>
         <div class="header-content">
-          <h1><i class="el-icon-connection"></i> LLM API中转站管理系统</h1>
+          <h1>LLM API中转站管理系统</h1>
           <div class="header-right">
             <el-menu mode="horizontal" :router="true" :default-active="activeRoute">
               <el-menu-item index="/">
@@ -213,14 +213,14 @@ export default {
 <style>
 /* 全局样式 */
 :root {
-  --primary-color: #3a7bd5;
-  --primary-light: #6fa1ff;
-  --primary-dark: #0d47a1;
+  --primary-color: #1e88e5;
+  --primary-light: #4b9fea;
+  --primary-dark: #1565c0;
   --secondary-color: #00d0b0;
   --accent-color: #ff6b6b;
-  --text-primary: #2c3e50;
-  --text-secondary: #546e7a;
-  --bg-light: #f8f9fa;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --bg-light: #f5f7fa;
   --bg-white: #ffffff;
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -234,10 +234,11 @@ export default {
 /* 基础样式重置 */
 body {
   margin: 0;
-  font-family: 'Inter', 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--text-primary);
+  font-size: 14px;
 }
 
 .app-container {
@@ -250,7 +251,7 @@ body {
 
 /* 头部样式 */
 .el-header {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: #1976d2;
   color: white;
   line-height: 60px;
   padding: 0 30px;
@@ -268,10 +269,10 @@ body {
 
 .header-content h1 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 500;
   letter-spacing: 0.5px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
 }
 
 .header-right {
@@ -283,21 +284,25 @@ body {
 .el-menu.el-menu--horizontal {
   border-bottom: none;
   background: transparent;
+  margin-right: 20px;
 }
 
 .el-menu--horizontal > .el-menu-item {
   height: 60px;
   line-height: 60px;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 500;
+  color: #ffffff;
+  font-weight: 400;
+  font-size: 14px;
   border-bottom: 2px solid transparent;
   transition: var(--transition);
+  padding: 0 15px;
 }
 
 .el-menu--horizontal > .el-menu-item.is-active {
-  color: white;
-  border-bottom: 2px solid white;
-  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-bottom: 2px solid #ffffff;
+  background-color: rgba(255, 255, 255, 0.15);
+  font-weight: 500;
 }
 
 .el-menu--horizontal > .el-menu-item:hover {
@@ -316,12 +321,23 @@ body {
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: white;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
+  color: #ffffff;
+  font-weight: 400;
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
   transition: var(--transition);
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.username-text {
+  margin: 0 5px;
+}
+
+.user-avatar {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 14px;
 }
 
 .user-dropdown-link:hover {
@@ -336,12 +352,12 @@ body {
 .el-main {
   background-color: var(--bg-white);
   color: var(--text-primary);
-  padding: 24px;
+  padding: 20px;
   flex: 1;
   overflow-y: auto;
   box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-md);
-  margin: 20px;
+  border-radius: var(--radius-sm);
+  margin: 15px;
 }
 
 /* 页脚样式 */
@@ -349,10 +365,19 @@ body {
   background-color: var(--bg-white);
   color: var(--text-secondary);
   text-align: center;
-  line-height: 50px;
-  font-size: 0.9rem;
+  line-height: 40px;
+  font-size: 12px;
   box-shadow: var(--shadow-sm);
   margin-top: auto;
+}
+
+.footer-divider {
+  margin: 0 8px;
+  color: #cccccc;
+}
+
+.footer-author {
+  color: #888888;
 }
 
 .footer-content {
@@ -367,7 +392,7 @@ body {
 
 /* 对话框样式 */
 .el-dialog {
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
 }
@@ -375,7 +400,7 @@ body {
 .el-dialog__header {
   background-color: var(--primary-color);
   color: white;
-  padding: 16px 20px;
+  padding: 15px 20px;
 }
 
 .el-dialog__title {
