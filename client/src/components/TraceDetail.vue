@@ -1,50 +1,50 @@
 <template>
   <div class="trace-detail">
-    <el-card v-if="trace" class="trace-card">
-      <template #header>
+    <a-card v-if="trace" class="trace-card">
+      <template #title>
         <div class="card-header">
           <h3>溯源详情 (ID: {{ trace.id }})</h3>
-          <el-tag type="info">{{ formatDate(trace.createdAt) }}</el-tag>
+          <a-tag color="blue">{{ formatDate(trace.createdAt) }}</a-tag>
         </div>
       </template>
       
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="中转站URL">{{ trace.baseUrl }}</el-descriptions-item>
-        <el-descriptions-item label="模型">{{ trace.model }}</el-descriptions-item>
-        <el-descriptions-item label="请求时间">{{ formatDate(trace.requestTime) }}</el-descriptions-item>
-        <el-descriptions-item label="响应时间">{{ formatDate(trace.responseTime) }}</el-descriptions-item>
-        <el-descriptions-item label="初始IP">{{ trace.ip }}</el-descriptions-item>
-        <el-descriptions-item label="用户代理">{{ trace.userAgent }}</el-descriptions-item>
-      </el-descriptions>
+      <a-descriptions :column="2" bordered>
+        <a-descriptions-item label="中转站URL">{{ trace.baseUrl }}</a-descriptions-item>
+        <a-descriptions-item label="模型">{{ trace.model }}</a-descriptions-item>
+        <a-descriptions-item label="请求时间">{{ formatDate(trace.requestTime) }}</a-descriptions-item>
+        <a-descriptions-item label="响应时间">{{ formatDate(trace.responseTime) }}</a-descriptions-item>
+        <a-descriptions-item label="初始IP">{{ trace.ip }}</a-descriptions-item>
+        <a-descriptions-item label="用户代理">{{ trace.userAgent }}</a-descriptions-item>
+      </a-descriptions>
       
-      <el-divider />
+      <a-divider />
       
-      <el-tabs type="border-card">
-        <el-tab-pane label="IP路径">
+      <a-tabs type="card">
+        <a-tab-pane key="ipPath" tab="IP路径">
           <div class="code-block">
             <pre v-if="trace.ipPath">{{ formatIpPath(trace.ipPath) }}</pre>
             <pre v-else>{{ trace.ip }}</pre>
           </div>
-        </el-tab-pane>
-        <el-tab-pane label="请求体">
+        </a-tab-pane>
+        <a-tab-pane key="requestBody" tab="请求体">
           <div class="code-block">
             <pre>{{ formatJson(trace.requestBody) }}</pre>
           </div>
-        </el-tab-pane>
-        <el-tab-pane label="响应体">
+        </a-tab-pane>
+        <a-tab-pane key="responseBody" tab="响应体">
           <div class="code-block">
             <pre>{{ formatJson(trace.responseBody) }}</pre>
           </div>
-        </el-tab-pane>
-        <el-tab-pane label="请求头">
+        </a-tab-pane>
+        <a-tab-pane key="headers" tab="请求头">
           <div class="code-block">
             <pre>{{ formatJson(trace.headers) }}</pre>
           </div>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+        </a-tab-pane>
+      </a-tabs>
+    </a-card>
     
-    <el-empty v-else description="无溯源数据"></el-empty>
+    <a-empty v-else description="无溯源数据"></a-empty>
   </div>
 </template>
 

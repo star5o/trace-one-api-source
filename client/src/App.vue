@@ -1,86 +1,88 @@
 <template>
   <div class="app-container">
     <!-- 修改密码对话框 -->
-    <el-dialog
-      v-model="passwordDialogVisible"
+    <a-modal
+      v-model:open="passwordDialogVisible"
       title="修改密码"
-      width="30%"
-      :close-on-click-modal="false"
-      destroy-on-close
-      center
+      :width="500"
+      :mask-closable="false"
+      :destroyOnClose="true"
+      centered
+      @ok="submitPasswordChange"
+      :confirmLoading="passwordLoading"
     >
-      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
-        <el-form-item label="当前密码" prop="currentPassword">
-          <el-input v-model="passwordForm.currentPassword" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="新密码" prop="newPassword">
-          <el-input v-model="passwordForm.newPassword" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="确认新密码" prop="confirmPassword">
-          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
-        </el-form-item>
-      </el-form>
+      <a-form :model="passwordForm" ref="passwordFormRef" :rules="passwordRules" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+        <a-form-item label="当前密码" name="currentPassword">
+          <a-input-password v-model:value="passwordForm.currentPassword" />
+        </a-form-item>
+        <a-form-item label="新密码" name="newPassword">
+          <a-input-password v-model:value="passwordForm.newPassword" />
+        </a-form-item>
+        <a-form-item label="确认新密码" name="confirmPassword">
+          <a-input-password v-model:value="passwordForm.confirmPassword" />
+        </a-form-item>
+      </a-form>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="passwordDialogVisible = false" plain>取消</el-button>
-          <el-button type="primary" @click="submitPasswordChange" :loading="passwordLoading" icon="Key">确认</el-button>
-        </span>
+        <a-button @click="passwordDialogVisible = false">取消</a-button>
+        <a-button type="primary" @click="submitPasswordChange" :loading="passwordLoading">
+          <template #icon><key-outlined /></template>确认
+        </a-button>
       </template>
-    </el-dialog>
+    </a-modal>
     
-    <el-container v-if="$route.meta.public">
-      <el-main style="padding: 0">
+    <a-layout v-if="$route.meta.public">
+      <a-layout-content :style="{ padding: 0 }">
         <router-view />
-      </el-main>
-    </el-container>
+      </a-layout-content>
+    </a-layout>
     
-    <el-container v-else>
-      <el-header>
+    <a-layout v-else>
+      <a-layout-header>
         <div class="header-content">
           <h1>LLM API中转站管理系统</h1>
           <div class="header-right">
-            <el-menu mode="horizontal" :router="true" :default-active="activeRoute">
-              <el-menu-item index="/">
-                <el-icon><Monitor /></el-icon>
+            <a-menu mode="horizontal" :selectedKeys="[activeRoute]">
+              <a-menu-item key="/" @click="() => $router.push('/')">
+                <template #icon><monitor-outlined /></template>
                 <span>中转站列表</span>
-              </el-menu-item>
-              <el-menu-item index="/trace">
-                <el-icon><Connection /></el-icon>
+              </a-menu-item>
+              <a-menu-item key="/trace" @click="() => $router.push('/trace')">
+                <template #icon><link-outlined /></template>
                 <span>中转溯源</span>
-              </el-menu-item>
-            </el-menu>
+              </a-menu-item>
+            </a-menu>
             
             <div class="user-info" v-if="user">
-              <el-dropdown @command="handleCommand">
-                <span class="user-dropdown-link">
-                  <el-avatar :size="28" class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</el-avatar>
+              <a-dropdown>
+                <a class="user-dropdown-link" @click.prevent>
+                  <a-avatar :size="28" class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</a-avatar>
                   <span class="username-text">{{ user.username }}</span>
-                  <el-icon class="el-icon--right"><arrow-down /></el-icon>
-                </span>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="changePassword">
-                      <el-icon><Key /></el-icon> 修改密码
-                    </el-dropdown-item>
-                    <el-dropdown-item command="logout">
-                      <el-icon><SwitchButton /></el-icon> 退出登录
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
+                  <down-outlined />
+                </a>
+                <template #overlay>
+                  <a-menu @click="handleCommand">
+                    <a-menu-item key="changePassword">
+                      <template #icon><key-outlined /></template> 修改密码
+                    </a-menu-item>
+                    <a-menu-item key="logout">
+                      <template #icon><logout-outlined /></template> 退出登录
+                    </a-menu-item>
+                  </a-menu>
                 </template>
-              </el-dropdown>
+              </a-dropdown>
             </div>
           </div>
         </div>
-      </el-header>
-      <el-main>
+      </a-layout-header>
+      <a-layout-content>
         <router-view />
-      </el-main>
-      <el-footer>
+      </a-layout-content>
+      <a-layout-footer>
         <div class="footer-content">
           <p>© {{ new Date().getFullYear() }} LLM API中转站管理系统 <span class="footer-divider">|</span> <span class="footer-author">by star5o</span></p>
         </div>
-      </el-footer>
-    </el-container>
+      </a-layout-footer>
+    </a-layout>
   </div>
 </template>
 
@@ -88,17 +90,17 @@
 import { computed, onMounted, ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { checkAuth, logout, getCurrentUser, changePassword } from './store/auth';
-import { ArrowDown, Monitor, Connection, Key, SwitchButton } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import { DownOutlined, MonitorOutlined, LinkOutlined, KeyOutlined, LogoutOutlined } from '@ant-design/icons-vue';
+import { message } from 'ant-design-vue';
 
 export default {
   name: 'App',
   components: {
-    ArrowDown,
-    Monitor,
-    Connection,
-    Key,
-    SwitchButton
+    DownOutlined,
+    MonitorOutlined,
+    LinkOutlined,
+    KeyOutlined,
+    LogoutOutlined
   },
   setup() {
     const router = useRouter();
@@ -130,12 +132,11 @@ export default {
       confirmPassword: [
         { required: true, message: '请确认新密码', trigger: 'blur' },
         { 
-          validator: (rule, value, callback) => {
+          validator: async (rule, value) => {
             if (value !== passwordForm.newPassword) {
-              callback(new Error('两次输入的密码不一致'));
-            } else {
-              callback();
+              throw new Error('两次输入的密码不一致');
             }
+            return Promise.resolve();
           }, 
           trigger: 'blur' 
         }
@@ -146,43 +147,45 @@ export default {
     const submitPasswordChange = async () => {
       if (!passwordFormRef.value) return;
       
-      await passwordFormRef.value.validate(async (valid) => {
-        if (valid) {
-          passwordLoading.value = true;
-          try {
-            const { success, message, error } = await changePassword(
-              passwordForm.currentPassword,
-              passwordForm.newPassword
-            );
-            
-            if (success) {
-              ElMessage.success(message || '密码修改成功');
-              passwordDialogVisible.value = false;
-              // 重置表单
-              passwordForm.currentPassword = '';
-              passwordForm.newPassword = '';
-              passwordForm.confirmPassword = '';
-            } else {
-              ElMessage.error(error || '密码修改失败');
-            }
-          } catch (err) {
-            ElMessage.error('操作失败，请重试');
-          } finally {
-            passwordLoading.value = false;
+      try {
+        await passwordFormRef.value.validate();
+        passwordLoading.value = true;
+        try {
+          const { success, msg, error } = await changePassword(
+            passwordForm.currentPassword,
+            passwordForm.newPassword
+          );
+          
+          if (success) {
+            message.success(msg || '密码修改成功');
+            passwordDialogVisible.value = false;
+            // 重置表单
+            passwordForm.currentPassword = '';
+            passwordForm.newPassword = '';
+            passwordForm.confirmPassword = '';
+          } else {
+            message.error(error || '密码修改失败');
           }
+        } catch (err) {
+          message.error('操作失败，请重试');
+        } finally {
+          passwordLoading.value = false;
         }
-      });
+      } catch (e) {
+        // 表单验证失败
+      }
     };
     
     // 处理下拉菜单命令
-    const handleCommand = async (command) => {
-      if (command === 'logout') {
+    const handleCommand = async (menuInfo) => {
+      const { key } = menuInfo;
+      if (key === 'logout') {
         const { success } = logout();
         if (success) {
-          ElMessage.success('已退出登录');
+          message.success('已退出登录');
           router.push('/login');
         }
-      } else if (command === 'changePassword') {
+      } else if (key === 'changePassword') {
         passwordDialogVisible.value = true;
       }
     };
@@ -250,7 +253,7 @@ body {
 }
 
 /* 头部样式 */
-.el-header {
+.ant-layout-header {
   background: #1976d2;
   color: white;
   line-height: 60px;
@@ -258,6 +261,7 @@ body {
   box-shadow: var(--shadow-md);
   position: relative;
   z-index: 10;
+  height: 64px;
 }
 
 .header-content {
@@ -281,13 +285,14 @@ body {
 }
 
 /* 菜单样式 */
-.el-menu.el-menu--horizontal {
+.ant-menu.ant-menu-horizontal {
   border-bottom: none;
   background: transparent;
   margin-right: 20px;
+  line-height: 60px;
 }
 
-.el-menu--horizontal > .el-menu-item {
+.ant-menu-horizontal > .ant-menu-item {
   height: 60px;
   line-height: 60px;
   color: #ffffff;
@@ -296,16 +301,17 @@ body {
   border-bottom: 2px solid transparent;
   transition: var(--transition);
   padding: 0 15px;
+  margin: 0;
 }
 
-.el-menu--horizontal > .el-menu-item.is-active {
+.ant-menu-horizontal > .ant-menu-item-selected {
   color: #ffffff;
   border-bottom: 2px solid #ffffff;
   background-color: rgba(255, 255, 255, 0.15);
   font-weight: 500;
 }
 
-.el-menu--horizontal > .el-menu-item:hover {
+.ant-menu-horizontal > .ant-menu-item:hover {
   color: white;
   background-color: rgba(255, 255, 255, 0.15);
 }
@@ -344,7 +350,7 @@ body {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-.user-dropdown-link .el-icon--right {
+.user-dropdown-link .anticon {
   margin-left: 8px;
 }
 

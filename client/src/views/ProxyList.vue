@@ -1,209 +1,284 @@
 <template>
   <div class="proxy-list page-container">
-    <el-card>
-      <template #header>
+    <a-card>
+      <template #title>
         <div class="card-header">
           <span class="title">中转站列表</span>
-          <el-button type="primary" @click="openAddProxyDialog">添加中转站</el-button>
+          <a-button type="primary" @click="openAddProxyDialog">添加中转站</a-button>
         </div>
       </template>
       
       <div v-if="proxyList.length === 0" class="empty-data">
-        <el-empty description="暂无中转站数据" />
+        <a-empty description="暂无中转站数据" />
       </div>
       
       <div v-else class="proxy-table">
-        <el-table :data="proxyList" style="width: 100%" border>
-          <el-table-column prop="name" label="名称" min-width="120" />
-          <el-table-column prop="baseUrl" label="Base URL" min-width="200" />
-          <el-table-column label="分组数量" min-width="100">
-            <template #default="scope">
-              {{ scope.row.groups ? scope.row.groups.length : 0 }}
+        <a-table :dataSource="proxyList" :columns="proxyColumns" bordered>
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'groupCount'">
+              {{ record.groups ? record.groups.length : 0 }}
             </template>
-          </el-table-column>
-          <el-table-column label="模型数量" min-width="100">
-            <template #default="scope">
-              {{ getModelCount(scope.row) }}
+            <template v-else-if="column.key === 'modelCount'">
+              {{ getModelCount(record) }}
             </template>
-          </el-table-column>
-          <el-table-column label="操作" width="350">
-            <template #default="scope">
-              <el-button size="small" @click="viewProxyDetail(scope.row)">查看详情</el-button>
-              <el-button size="small" type="primary" @click="openEditProxyDialog(scope.row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="confirmDeleteProxy(scope.row)">删除</el-button>
+            <template v-else-if="column.key === 'action'">
+              <a-button size="small" @click="viewProxyDetail(record)">查看详情</a-button>
+              <a-button size="small" type="primary" @click="openEditProxyDialog(record)" style="margin-left: 8px">编辑</a-button>
+              <a-button size="small" danger @click="confirmDeleteProxy(record)" style="margin-left: 8px">删除</a-button>
             </template>
-          </el-table-column>
-        </el-table>
+          </template>
+        </a-table>
       </div>
-    </el-card>
+    </a-card>
 
     <!-- 中转站详情抽屉 -->
-    <el-drawer v-model="proxyDetailDrawer.visible" :title="proxyDetailDrawer.title" size="50%">
+    <a-drawer v-model:open="proxyDetailDrawer.visible" :title="proxyDetailDrawer.title" width="50%">
       <div v-if="currentProxy">
-        <el-tabs v-model="proxyDetailDrawer.activeTab">
-          <el-tab-pane label="基本信息" name="info">
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="名称">{{ currentProxy.name }}</el-descriptions-item>
-              <el-descriptions-item label="Base URL">{{ currentProxy.baseUrl }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间">{{ formatDate(currentProxy.createdAt) }}</el-descriptions-item>
-              <el-descriptions-item label="更新时间">{{ formatDate(currentProxy.updatedAt) }}</el-descriptions-item>
-            </el-descriptions>
-          </el-tab-pane>
+        <a-tabs v-model:activeKey="proxyDetailDrawer.activeTab">
+          <a-tab-pane key="info" tab="基本信息">
+            <a-descriptions :column="1" bordered>
+              <a-descriptions-item label="名称">{{ currentProxy.name }}</a-descriptions-item>
+              <a-descriptions-item label="Base URL">{{ currentProxy.baseUrl }}</a-descriptions-item>
+              <a-descriptions-item label="创建时间">{{ formatDate(currentProxy.createdAt) }}</a-descriptions-item>
+              <a-descriptions-item label="更新时间">{{ formatDate(currentProxy.updatedAt) }}</a-descriptions-item>
+            </a-descriptions>
+          </a-tab-pane>
           
-          <el-tab-pane label="分组管理" name="groups">
+          <a-tab-pane key="groups" tab="分组管理">
             <div class="action-bar">
-              <el-button type="primary" @click="openAddGroupDialog">添加分组</el-button>
+              <a-button type="primary" @click="openAddGroupDialog">添加分组</a-button>
             </div>
             
             <div v-if="!currentProxy.groups || currentProxy.groups.length === 0" class="empty-data">
-              <el-empty description="暂无分组数据" />
+              <a-empty description="暂无分组数据" />
             </div>
             
             <div v-else class="group-table">
-              <el-table :data="currentProxy.groups" style="width: 100%" border>
-                <el-table-column prop="name" label="分组名称" min-width="120" />
-                <el-table-column prop="key" label="API Key" min-width="200" show-overflow-tooltip />
-                <el-table-column label="模型数量" min-width="100">
-                  <template #default="scope">
-                    {{ scope.row.models ? scope.row.models.length : 0 }}
+              <a-table :dataSource="currentProxy.groups" :columns="groupColumns" bordered>
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.key === 'modelCount'">
+                    {{ record.models ? record.models.length : 0 }}
                   </template>
-                </el-table-column>
-                <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip>
-                  <template #default="scope">
-                    {{ scope.row.remark || '' }}
+                  <template v-else-if="column.key === 'remark'">
+                    {{ record.remark || '' }}
                   </template>
-                </el-table-column>
-                <el-table-column label="操作" width="350">
-                  <template #default="scope">
-                    <el-button size="small" @click="refreshModels(currentProxy, scope.row)">刷新模型</el-button>
-                    <el-button size="small" type="primary" @click="openEditGroupDialog(scope.row)">编辑</el-button>
-                    <el-button size="small" type="danger" @click="confirmDeleteGroup(scope.row)">删除</el-button>
+                  <template v-else-if="column.key === 'action'">
+                    <a-button size="small" @click="refreshModels(currentProxy, record)">刷新模型</a-button>
+                    <a-button size="small" type="primary" @click="openEditGroupDialog(record)" style="margin-left: 8px">编辑</a-button>
+                    <a-button size="small" danger @click="confirmDeleteGroup(record)" style="margin-left: 8px">删除</a-button>
                   </template>
-                </el-table-column>
-              </el-table>
+                </template>
+              </a-table>
             </div>
-          </el-tab-pane>
+          </a-tab-pane>
           
-          <el-tab-pane label="模型列表" name="models">
+          <a-tab-pane key="models" tab="模型列表">
             <div v-if="!currentProxy.groups || !hasModels(currentProxy)" class="empty-data">
-              <el-empty description="暂无模型数据" />
+              <a-empty description="暂无模型数据" />
             </div>
             
             <div v-else>
-              <el-collapse>
-                <el-collapse-item v-for="group in currentProxy.groups" :key="group.id" :title="group.name">
+              <a-collapse>
+                <a-collapse-panel v-for="group in currentProxy.groups" :key="group.id" :header="group.name">
                   <div v-if="!group.models || group.models.length === 0" class="empty-data">
-                    <el-empty description="暂无模型数据" />
-                    <el-button type="primary" @click="refreshModels(currentProxy, group)">刷新模型</el-button>
+                    <a-empty description="暂无模型数据" />
+                    <a-button type="primary" @click="refreshModels(currentProxy, group)">刷新模型</a-button>
                   </div>
                   
                   <div v-else class="model-table">
-                    <el-table :data="group.models" style="width: 100%" border>
-                      <el-table-column prop="id" label="模型ID" min-width="200" />
-                      <el-table-column prop="created" label="创建时间" min-width="150">
-                        <template #default="scope">
-                          {{ formatDate(scope.row.created * 1000) }}
+                    <a-table :dataSource="group.models" :columns="modelColumns" bordered>
+                      <template #bodyCell="{ column, record }">
+                        <template v-if="column.key === 'created'">
+                          {{ formatDate(record.created * 1000) }}
                         </template>
-                      </el-table-column>
-                      <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip>
-                        <template #default="scope">
-                          {{ scope.row.remark || '' }}
+                        <template v-else-if="column.key === 'remark'">
+                          {{ record.remark || '' }}
                         </template>
-                      </el-table-column>
-                      <el-table-column label="操作" width="350">
-                        <template #default="scope">
-                          <el-button size="small" type="primary" @click="sendToTrace(currentProxy, group, scope.row)">发送到溯源</el-button>
-                          <el-button size="small" @click="viewModelDetail(currentProxy.id, group.id, scope.row.id)">查看溯源记录</el-button>
-                          <el-button size="small" type="info" @click="editModelRemark(currentProxy, group, scope.row)">编辑备注</el-button>
+                        <template v-else-if="column.key === 'action'">
+                          <a-button size="small" type="primary" @click="sendToTrace(currentProxy, group, record)">发送到溯源</a-button>
+                          <a-button size="small" @click="viewModelDetail(currentProxy.id, group.id, record.id)" style="margin-left: 8px">查看溯源记录</a-button>
+                          <a-button size="small" @click="editModelRemark(currentProxy, group, record)" style="margin-left: 8px">编辑备注</a-button>
                         </template>
-                      </el-table-column>
-                    </el-table>
+                      </template>
+                    </a-table>
                   </div>
-                </el-collapse-item>
-              </el-collapse>
+                </a-collapse-panel>
+              </a-collapse>
             </div>
-          </el-tab-pane>
-        </el-tabs>
+          </a-tab-pane>
+        </a-tabs>
       </div>
-    </el-drawer>
+    </a-drawer>
 
     <!-- 添加/编辑中转站对话框 -->
-    <el-dialog 
-      v-model="proxyDialog.visible" 
+    <a-modal 
+      v-model:open="proxyDialog.visible" 
       :title="proxyDialog.isEdit ? '编辑中转站' : '添加中转站'"
       width="500px"
+      @ok="submitProxyForm"
     >
-      <el-form 
+      <a-form 
         ref="proxyFormRef"
         :model="proxyForm" 
         :rules="proxyRules" 
-        label-width="100px"
+        layout="horizontal"
+        :label-col="{ span: 6 }"
+        :wrapper-col="{ span: 18 }"
       >
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="proxyForm.name" placeholder="请输入中转站名称" />
-        </el-form-item>
-        <el-form-item label="Base URL" prop="baseUrl">
-          <el-input v-model="proxyForm.baseUrl" placeholder="请输入中转站Base URL" />
-        </el-form-item>
-      </el-form>
+        <a-form-item label="名称" name="name">
+          <a-input v-model:value="proxyForm.name" placeholder="请输入中转站名称" />
+        </a-form-item>
+        <a-form-item label="Base URL" name="baseUrl">
+          <a-input v-model:value="proxyForm.baseUrl" placeholder="请输入中转站Base URL" />
+        </a-form-item>
+      </a-form>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="proxyDialog.visible = false">取消</el-button>
-          <el-button type="primary" @click="submitProxyForm">确定</el-button>
-        </span>
+        <a-button @click="proxyDialog.visible = false">取消</a-button>
+        <a-button type="primary" @click="submitProxyForm">确定</a-button>
       </template>
-    </el-dialog>
+    </a-modal>
 
     <!-- 添加/编辑分组对话框 -->
-    <el-dialog 
-      v-model="groupDialog.visible" 
+    <a-modal 
+      v-model:open="groupDialog.visible" 
       :title="groupDialog.isEdit ? '编辑分组' : '添加分组'"
       width="500px"
+      @ok="submitGroupForm"
     >
-      <el-form 
+      <a-form 
         ref="groupFormRef"
         :model="groupForm" 
         :rules="groupRules" 
-        label-width="100px"
+        layout="horizontal"
+        :label-col="{ span: 6 }"
+        :wrapper-col="{ span: 18 }"
       >
-        <el-form-item label="分组名称" prop="name">
-          <el-input v-model="groupForm.name" placeholder="请输入分组名称" />
-        </el-form-item>
-        <el-form-item label="API Key" prop="key">
-          <el-input v-model="groupForm.key" placeholder="请输入API Key" show-password />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="groupForm.remark" placeholder="请输入备注" />
-        </el-form-item>
-      </el-form>
+        <a-form-item label="分组名称" name="name">
+          <a-input v-model:value="groupForm.name" placeholder="请输入分组名称" />
+        </a-form-item>
+        <a-form-item label="API Key" name="key">
+          <a-input-password v-model:value="groupForm.key" placeholder="请输入API Key" />
+        </a-form-item>
+        <a-form-item label="备注" name="remark">
+          <a-input v-model:value="groupForm.remark" placeholder="请输入备注" />
+        </a-form-item>
+      </a-form>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="groupDialog.visible = false">取消</el-button>
-          <el-button type="primary" @click="submitGroupForm">确定</el-button>
-        </span>
+        <a-button @click="groupDialog.visible = false">取消</a-button>
+        <a-button type="primary" @click="submitGroupForm">确定</a-button>
       </template>
-    </el-dialog>
+    </a-modal>
   </div>
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Edit } from '@element-plus/icons-vue'
+import { message, Modal } from 'ant-design-vue'
+import { EditOutlined } from '@ant-design/icons-vue'
 import axios from 'axios'
 import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ProxyList',
   components: {
-    Edit
+    EditOutlined
   },
   setup() {
     const router = useRouter()
     
     const proxyList = ref([])
     const currentProxy = ref(null)
+    
+    // 定义中转站表格列
+    const proxyColumns = [
+      {
+        title: '名称',
+        dataIndex: 'name',
+        key: 'name',
+        width: 120
+      },
+      {
+        title: 'Base URL',
+        dataIndex: 'baseUrl',
+        key: 'baseUrl',
+        width: 200
+      },
+      {
+        title: '分组数量',
+        key: 'groupCount',
+        width: 100
+      },
+      {
+        title: '模型数量',
+        key: 'modelCount',
+        width: 100
+      },
+      {
+        title: '操作',
+        key: 'action',
+        width: 350
+      }
+    ]
+    
+    // 定义分组表格列
+    const groupColumns = [
+      {
+        title: '分组名称',
+        dataIndex: 'name',
+        key: 'name',
+        width: 120
+      },
+      {
+        title: 'API Key',
+        dataIndex: 'key',
+        key: 'key',
+        width: 200,
+        ellipsis: true
+      },
+      {
+        title: '模型数量',
+        key: 'modelCount',
+        width: 100
+      },
+      {
+        title: '备注',
+        key: 'remark',
+        width: 150,
+        ellipsis: true
+      },
+      {
+        title: '操作',
+        key: 'action',
+        width: 350
+      }
+    ]
+    
+    // 定义模型表格列
+    const modelColumns = [
+      {
+        title: '模型ID',
+        dataIndex: 'id',
+        key: 'id',
+        width: 200
+      },
+      {
+        title: '创建时间',
+        key: 'created',
+        width: 150
+      },
+      {
+        title: '备注',
+        key: 'remark',
+        width: 150,
+        ellipsis: true
+      },
+      {
+        title: '操作',
+        key: 'action',
+        width: 350
+      }
+    ]
     
     // 中转站详情抽屉
     const proxyDetailDrawer = reactive({
@@ -271,7 +346,7 @@ export default {
         proxyList.value = response.data
       } catch (error) {
         console.error('获取中转站列表失败:', error)
-        ElMessage.error('获取中转站列表失败')
+        message.error('获取中转站列表失败')
       }
     }
     
@@ -326,58 +401,57 @@ export default {
     const submitProxyForm = async () => {
       if (!proxyFormRef.value) return
       
-      await proxyFormRef.value.validate(async (valid) => {
-        if (valid) {
-          try {
-            if (proxyDialog.isEdit) {
-              // 编辑中转站
-              await apiClient.put(`/proxies/${proxyForm.id}`, {
-                name: proxyForm.name,
-                baseUrl: proxyForm.baseUrl
-              })
-              ElMessage.success('中转站更新成功')
-            } else {
-              // 添加中转站
-              await apiClient.post('/proxies', {
-                name: proxyForm.name,
-                baseUrl: proxyForm.baseUrl
-              })
-              ElMessage.success('中转站添加成功')
-            }
-            proxyDialog.visible = false
-            fetchProxyList()
-          } catch (error) {
-            console.error('保存中转站失败:', error)
-            ElMessage.error('保存中转站失败')
+      try {
+        await proxyFormRef.value.validate()
+        
+        try {
+          if (proxyDialog.isEdit) {
+            // 编辑中转站
+            await apiClient.put(`/proxies/${proxyForm.id}`, {
+              name: proxyForm.name,
+              baseUrl: proxyForm.baseUrl
+            })
+            message.success('中转站更新成功')
+          } else {
+            // 添加中转站
+            await apiClient.post('/proxies', {
+              name: proxyForm.name,
+              baseUrl: proxyForm.baseUrl
+            })
+            message.success('中转站添加成功')
           }
+          proxyDialog.visible = false
+          fetchProxyList()
+        } catch (error) {
+          console.error('保存中转站失败:', error)
+          message.error('保存中转站失败')
         }
-      })
+      } catch (e) {
+        // 表单验证失败
+      }
     }
     
     // 确认删除中转站
     const confirmDeleteProxy = (proxy) => {
-      ElMessageBox.confirm(
-        `确定要删除中转站 "${proxy.name}" 吗？此操作将永久删除该中转站及其所有分组和模型数据。`,
-        '警告',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      ).then(async () => {
-        try {
-          await apiClient.delete(`/proxies/${proxy.id}`)
-          ElMessage.success('中转站删除成功')
-          fetchProxyList()
-          if (proxyDetailDrawer.visible && currentProxy.value && currentProxy.value.id === proxy.id) {
-            proxyDetailDrawer.visible = false
+      Modal.confirm({
+        title: '警告',
+        content: `确定要删除中转站 "${proxy.name}" 吗？此操作将永久删除该中转站及其所有分组和模型数据。`,
+        okText: '确定',
+        cancelText: '取消',
+        okType: 'danger',
+        onOk: async () => {
+          try {
+            await apiClient.delete(`/proxies/${proxy.id}`)
+            message.success('中转站删除成功')
+            fetchProxyList()
+            if (proxyDetailDrawer.visible && currentProxy.value && currentProxy.value.id === proxy.id) {
+              proxyDetailDrawer.visible = false
+            }
+          } catch (error) {
+            console.error('删除中转站失败:', error)
+            message.error('删除中转站失败')
           }
-        } catch (error) {
-          console.error('删除中转站失败:', error)
-          ElMessage.error('删除中转站失败')
         }
-      }).catch(() => {
-        // 取消删除
       })
     }
     
@@ -407,56 +481,29 @@ export default {
     const submitGroupForm = async () => {
       if (!groupFormRef.value) return
       
-      await groupFormRef.value.validate(async (valid) => {
-        if (valid) {
-          try {
-            if (groupDialog.isEdit) {
-              // 编辑分组
-              await apiClient.put(`/groups/${groupForm.id}`, {
-                name: groupForm.name,
-                key: groupForm.key,
-                remark: groupForm.remark
-              })
-              ElMessage.success('分组更新成功')
-            } else {
-              // 添加分组
-              await apiClient.post('/groups', {
-                proxyId: groupForm.proxyId,
-                name: groupForm.name,
-                key: groupForm.key,
-                remark: groupForm.remark
-              })
-              ElMessage.success('分组添加成功')
-            }
-            groupDialog.visible = false
-            fetchProxyList()
-            // 更新当前显示的中转站详情
-            if (currentProxy.value) {
-              const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
-              currentProxy.value = response.data
-            }
-          } catch (error) {
-            console.error('保存分组失败:', error)
-            ElMessage.error('保存分组失败')
-          }
-        }
-      })
-    }
-    
-    // 确认删除分组
-    const confirmDeleteGroup = (group) => {
-      ElMessageBox.confirm(
-        `确定要删除分组 "${group.name}" 吗？此操作将永久删除该分组及其所有模型数据。`,
-        '警告',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      ).then(async () => {
+      try {
+        await groupFormRef.value.validate()
+        
         try {
-          await apiClient.delete(`/groups/${group.id}`)
-          ElMessage.success('分组删除成功')
+          if (groupDialog.isEdit) {
+            // 编辑分组
+            await apiClient.put(`/groups/${groupForm.id}`, {
+              name: groupForm.name,
+              key: groupForm.key,
+              remark: groupForm.remark
+            })
+            message.success('分组更新成功')
+          } else {
+            // 添加分组
+            await apiClient.post('/groups', {
+              proxyId: groupForm.proxyId,
+              name: groupForm.name,
+              key: groupForm.key,
+              remark: groupForm.remark
+            })
+            message.success('分组添加成功')
+          }
+          groupDialog.visible = false
           fetchProxyList()
           // 更新当前显示的中转站详情
           if (currentProxy.value) {
@@ -464,20 +511,46 @@ export default {
             currentProxy.value = response.data
           }
         } catch (error) {
-          console.error('删除分组失败:', error)
-          ElMessage.error('删除分组失败')
+          console.error('保存分组失败:', error)
+          message.error('保存分组失败')
         }
-      }).catch(() => {
-        // 取消删除
+      } catch (e) {
+        // 表单验证失败
+      }
+    }
+    
+    // 确认删除分组
+    const confirmDeleteGroup = (group) => {
+      Modal.confirm({
+        title: '警告',
+        content: `确定要删除分组 "${group.name}" 吗？此操作将永久删除该分组及其所有模型数据。`,
+        okText: '确定',
+        cancelText: '取消',
+        okType: 'danger',
+        onOk: async () => {
+          try {
+            await apiClient.delete(`/groups/${group.id}`)
+            message.success('分组删除成功')
+            fetchProxyList()
+            // 更新当前显示的中转站详情
+            if (currentProxy.value) {
+              const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
+              currentProxy.value = response.data
+            }
+          } catch (error) {
+            console.error('删除分组失败:', error)
+            message.error('删除分组失败')
+          }
+        }
       })
     }
     
     // 刷新模型列表
     const refreshModels = async (proxy, group) => {
       try {
-        ElMessage.info('正在刷新模型列表，请稍候...')
+        message.info('正在刷新模型列表，请稍候...')
         await apiClient.post(`/groups/${group.id}/refresh-models`)
-        ElMessage.success('模型列表刷新成功')
+        message.success('模型列表刷新成功')
         fetchProxyList()
         // 更新当前显示的中转站详情
         if (currentProxy.value) {
@@ -486,7 +559,7 @@ export default {
         }
       } catch (error) {
         console.error('刷新模型列表失败:', error)
-        ElMessage.error('刷新模型列表失败')
+        message.error('刷新模型列表失败')
       }
     }
     
@@ -509,30 +582,45 @@ export default {
     
     // 编辑模型备注
     const editModelRemark = (proxy, group, model) => {
-      ElMessageBox.prompt('请输入模型备注', '编辑模型备注', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        inputPattern: /.+/,
-        inputErrorMessage: '备注不能为空'
-      }).then(async ({ value }) => {
-        try {
-          await apiClient.put(`/models/${model.id}`, {
-            remark: value
+      Modal.confirm({
+        title: '编辑模型备注',
+        content: h => h('div', [
+          h('p', '请输入模型备注'),
+          h('a-input', {
+            ref: 'modelRemarkInput',
+            value: model.remark || '',
+            onChange: e => modelRemarkInput = e.target.value
           })
-          ElMessage.success('模型备注更新成功')
-          // 更新当前显示的中转站详情
-          if (currentProxy.value) {
-            const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
-            currentProxy.value = response.data
+        ]),
+        okText: '确定',
+        cancelText: '取消',
+        onOk: async () => {
+          try {
+            if (!modelRemarkInput || modelRemarkInput.trim() === '') {
+              message.error('备注不能为空')
+              return Promise.reject()
+            }
+            
+            await apiClient.put(`/models/${model.id}`, {
+              remark: modelRemarkInput
+            })
+            message.success('模型备注更新成功')
+            // 更新当前显示的中转站详情
+            if (currentProxy.value) {
+              const response = await apiClient.get(`/proxies/${currentProxy.value.id}`)
+              currentProxy.value = response.data
+            }
+          } catch (error) {
+            console.error('更新模型备注失败:', error)
+            message.error('更新模型备注失败')
+            return Promise.reject()
           }
-        } catch (error) {
-          console.error('更新模型备注失败:', error)
-          ElMessage.error('更新模型备注失败')
         }
-      }).catch(() => {
-        // 取消编辑
       })
     }
+    
+    // 用于存储模型备注输入值
+    let modelRemarkInput = ''
     
     onMounted(() => {
       fetchProxyList()
@@ -561,6 +649,9 @@ export default {
       openAddGroupDialog,
       openEditGroupDialog,
       submitGroupForm,
+      proxyColumns,
+      groupColumns,
+      modelColumns,
       confirmDeleteGroup,
       refreshModels,
       sendToTrace,
@@ -579,7 +670,12 @@ export default {
   display: flex;
   align-items: center;
 }
-.model-remark .el-button {
+.model-remark .ant-btn {
   margin-left: 10px;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

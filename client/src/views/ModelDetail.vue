@@ -1,85 +1,79 @@
 <template>
   <div class="model-detail page-container">
-    <el-card>
-      <template #header>
+    <a-card>
+      <template #title>
         <div class="card-header">
           <span class="title">模型溯源记录</span>
-          <el-button @click="goBack">返回</el-button>
+          <a-button @click="goBack">返回</a-button>
         </div>
       </template>
       
       <div v-if="loading" class="loading-container">
-        <el-skeleton :rows="5" animated />
+        <a-skeleton :rows="5" active />
       </div>
       
       <div v-else>
-        <el-descriptions title="模型信息" :column="1" border>
-          <el-descriptions-item label="中转站">{{ proxyName }}</el-descriptions-item>
-          <el-descriptions-item label="分组">{{ groupName }}</el-descriptions-item>
-          <el-descriptions-item label="模型ID">{{ modelId }}</el-descriptions-item>
-        </el-descriptions>
+        <a-descriptions title="模型信息" :column="1" bordered>
+          <a-descriptions-item label="中转站">{{ proxyName }}</a-descriptions-item>
+          <a-descriptions-item label="分组">{{ groupName }}</a-descriptions-item>
+          <a-descriptions-item label="模型ID">{{ modelId }}</a-descriptions-item>
+        </a-descriptions>
         
         <div class="trace-records">
-          <el-divider content-position="center">溯源记录</el-divider>
+          <a-divider>溯源记录</a-divider>
           
           <div v-if="traceRecords.length === 0" class="empty-data">
-            <el-empty description="暂无溯源记录" />
+            <a-empty description="暂无溯源记录" />
           </div>
           
           <div v-else class="records-table">
-            <el-table :data="traceRecords" style="width: 100%" border>
-              <el-table-column prop="traceId" label="追踪ID" min-width="120" />
-              <el-table-column prop="ip" label="IP地址" min-width="120" />
-              <el-table-column label="请求时间" min-width="150">
-                <template #default="scope">
-                  {{ formatDate(scope.row.requestTime) }}
+            <a-table :dataSource="traceRecords" :columns="columns" bordered>
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'requestTime'">
+                  {{ formatDate(record.requestTime) }}
                 </template>
-              </el-table-column>
-              <el-table-column label="响应时间" min-width="150">
-                <template #default="scope">
-                  {{ formatDate(scope.row.responseTime) }}
+                <template v-else-if="column.key === 'responseTime'">
+                  {{ formatDate(record.responseTime) }}
                 </template>
-              </el-table-column>
-              <el-table-column label="操作" width="150">
-                <template #default="scope">
-                  <el-button size="small" type="primary" @click="viewTraceDetail(scope.row)">查看详情</el-button>
+                <template v-else-if="column.key === 'action'">
+                  <a-button size="small" type="primary" @click="viewTraceDetail(record)">查看详情</a-button>
                 </template>
-              </el-table-column>
-            </el-table>
+              </template>
+            </a-table>
             
             <div class="pagination-container">
-              <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                layout="total, sizes, prev, pager, next, jumper"
+              <a-pagination
+                v-model:current="currentPage"
+                v-model:pageSize="pageSize"
+                :pageSizeOptions="['10', '20', '50', '100']"
+                showSizeChanger
+                showTotal="(total) => `共 ${total} 条`"
                 :total="totalRecords"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
+                @change="handlePageChange"
               />
             </div>
           </div>
         </div>
       </div>
-    </el-card>
+    </a-card>
     
     <!-- 溯源详情对话框 -->
-    <el-dialog v-model="traceDetailDialog.visible" title="溯源详情" width="600px">
+    <a-modal v-model:open="traceDetailDialog.visible" title="溯源详情" width="600px">
       <div v-if="traceDetailDialog.data">
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="追踪ID">{{ traceDetailDialog.data.traceId }}</el-descriptions-item>
-          <el-descriptions-item label="中转站">{{ traceDetailDialog.data.baseUrl }}</el-descriptions-item>
-          <el-descriptions-item label="模型">{{ traceDetailDialog.data.model }}</el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{ traceDetailDialog.data.ip }}</el-descriptions-item>
-          <el-descriptions-item label="User Agent">{{ traceDetailDialog.data.userAgent }}</el-descriptions-item>
-          <el-descriptions-item label="请求时间">{{ formatDate(traceDetailDialog.data.requestTime) }}</el-descriptions-item>
-          <el-descriptions-item label="响应时间">{{ formatDate(traceDetailDialog.data.responseTime) }}</el-descriptions-item>
-          <el-descriptions-item label="请求头">
+        <a-descriptions :column="1" bordered>
+          <a-descriptions-item label="追踪ID">{{ traceDetailDialog.data.traceId }}</a-descriptions-item>
+          <a-descriptions-item label="中转站">{{ traceDetailDialog.data.baseUrl }}</a-descriptions-item>
+          <a-descriptions-item label="模型">{{ traceDetailDialog.data.model }}</a-descriptions-item>
+          <a-descriptions-item label="IP地址">{{ traceDetailDialog.data.ip }}</a-descriptions-item>
+          <a-descriptions-item label="User Agent">{{ traceDetailDialog.data.userAgent }}</a-descriptions-item>
+          <a-descriptions-item label="请求时间">{{ formatDate(traceDetailDialog.data.requestTime) }}</a-descriptions-item>
+          <a-descriptions-item label="响应时间">{{ formatDate(traceDetailDialog.data.responseTime) }}</a-descriptions-item>
+          <a-descriptions-item label="请求头">
             <pre>{{ JSON.stringify(traceDetailDialog.data.headers || {}, null, 2) }}</pre>
-          </el-descriptions-item>
-        </el-descriptions>
+          </a-descriptions-item>
+        </a-descriptions>
       </div>
-    </el-dialog>
+    </a-modal>
   </div>
 </template>
 
@@ -87,12 +81,45 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { message } from 'ant-design-vue'
 import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ModelDetail',
   setup() {
+    // 定义表格列
+    const columns = [
+      {
+        title: '追踪ID',
+        dataIndex: 'traceId',
+        key: 'traceId',
+        width: 120
+      },
+      {
+        title: 'IP地址',
+        dataIndex: 'ip',
+        key: 'ip',
+        width: 120
+      },
+      {
+        title: '请求时间',
+        dataIndex: 'requestTime',
+        key: 'requestTime',
+        width: 150
+      },
+      {
+        title: '响应时间',
+        dataIndex: 'responseTime',
+        key: 'responseTime',
+        width: 150
+      },
+      {
+        title: '操作',
+        key: 'action',
+        width: 150
+      }
+    ];
+    
     const route = useRoute()
     const router = useRouter()
     
@@ -133,7 +160,7 @@ export default {
         }
       } catch (error) {
         console.error('获取中转站和分组信息失败:', error)
-        ElMessage.error('获取中转站和分组信息失败')
+        message.error('获取中转站和分组信息失败')
       }
     }
     
@@ -151,7 +178,7 @@ export default {
         totalRecords.value = response.data.total
       } catch (error) {
         console.error('获取溯源记录失败:', error)
-        ElMessage.error('获取溯源记录失败')
+        message.error('获取溯源记录失败')
       } finally {
         loading.value = false
       }
@@ -165,19 +192,14 @@ export default {
         traceDetailDialog.visible = true
       } catch (error) {
         console.error('获取溯源详情失败:', error)
-        ElMessage.error('获取溯源详情失败')
+        message.error('获取溯源详情失败')
       }
     }
     
-    // 处理分页大小变化
-    const handleSizeChange = (size) => {
-      pageSize.value = size
-      fetchTraceRecords()
-    }
-    
-    // 处理页码变化
-    const handleCurrentChange = (page) => {
+    // 处理分页变化
+    const handlePageChange = (page, size) => {
       currentPage.value = page
+      pageSize.value = size
       fetchTraceRecords()
     }
     
@@ -201,10 +223,10 @@ export default {
       pageSize,
       totalRecords,
       traceDetailDialog,
+      columns,
       formatDate,
       viewTraceDetail,
-      handleSizeChange,
-      handleCurrentChange,
+      handlePageChange,
       goBack
     }
   }
