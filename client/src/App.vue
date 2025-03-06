@@ -286,10 +286,18 @@ body {
 
 /* 菜单样式 */
 .ant-menu.ant-menu-horizontal {
-  border-bottom: none;
+  border-bottom: none !important;
   background: transparent;
   margin-right: 20px;
   line-height: 60px;
+}
+
+.ant-menu-horizontal .ant-menu-item .ant-menu-title-content {
+  color: white !important;
+}
+
+.ant-menu-horizontal .ant-menu-item:hover .ant-menu-title-content {
+  color: white !important;
 }
 
 .ant-menu-horizontal > .ant-menu-item {
@@ -298,7 +306,7 @@ body {
   color: #ffffff;
   font-weight: 400;
   font-size: 14px;
-  border-bottom: 2px solid transparent;
+  border-bottom: 2px solid transparent !important;
   transition: var(--transition);
   padding: 0 15px;
   margin: 0;
@@ -306,13 +314,13 @@ body {
 
 .ant-menu-horizontal > .ant-menu-item-selected {
   color: #ffffff;
-  border-bottom: 2px solid var(--secondary-color);
+  border-bottom: 2px solid var(--secondary-color) !important;
   background-color: rgba(255, 255, 255, 0.15);
   font-weight: 500;
 }
 
 .ant-menu-horizontal > .ant-menu-item:hover {
-  color: white;
+  color: white !important;
   background-color: rgba(255, 255, 255, 0.15);
 }
 
