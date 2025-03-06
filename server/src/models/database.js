@@ -84,9 +84,30 @@ const initDatabase = () => {
           responseBody TEXT,
           requestTime INTEGER,
           responseTime INTEGER,
-          createdAt INTEGER NOT NULL
+          createdAt INTEGER NOT NULL,
+          groupName TEXT
         )
       `);
+      
+      // 检查是否需要添加 groupName 列（兼容旧版本）
+      db.get("PRAGMA table_info(traces)", (err, rows) => {
+        if (err) {
+          console.error('检查traces表结构失败:', err);
+        } else {
+          // 检查是否存在 groupName 列
+          const hasGroupName = rows.some(row => row.name === 'groupName');
+          if (!hasGroupName) {
+            // 添加 groupName 列
+            db.run('ALTER TABLE traces ADD COLUMN groupName TEXT', (err) => {
+              if (err) {
+                console.error('添加 groupName 列失败:', err);
+              } else {
+                console.log('成功添加 groupName 列到 traces 表');
+              }
+            });
+          }
+        }
+      });
       
       // 创建用户表
       db.run(`

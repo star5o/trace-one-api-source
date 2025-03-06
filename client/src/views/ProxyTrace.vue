@@ -22,6 +22,10 @@
             <a-input v-model:value="traceForm.model" placeholder="请输入模型ID" />
           </a-form-item>
           
+          <a-form-item label="分组名称" name="groupName">
+            <a-input v-model:value="traceForm.groupName" placeholder="请输入分组名称（非必填）" />
+          </a-form-item>
+          
           <a-form-item :wrapper-col="{ offset: 4, span: 20 }">
             <a-button type="primary" @click="startTrace">开始溯源</a-button>
             <a-button style="margin-left: 10px" @click="resetForm">重置</a-button>
@@ -49,6 +53,7 @@
               <a-descriptions-item label="追踪ID">{{ traceResult.traceId }}</a-descriptions-item>
               <a-descriptions-item label="中转站">{{ traceForm.baseUrl }}</a-descriptions-item>
               <a-descriptions-item label="模型">{{ traceForm.model }}</a-descriptions-item>
+              <a-descriptions-item label="分组名称">{{ traceForm.groupName || '无' }}</a-descriptions-item>
               <a-descriptions-item label="IP地址">{{ traceResult.ip }}</a-descriptions-item>
               <a-descriptions-item label="User Agent">{{ traceResult.userAgent }}</a-descriptions-item>
               <a-descriptions-item label="请求时间">{{ formatDate(traceResult.requestTime) }}</a-descriptions-item>
@@ -101,6 +106,7 @@
           <a-descriptions-item label="追踪ID">{{ traceDetailDialog.data.traceId }}</a-descriptions-item>
           <a-descriptions-item label="中转站">{{ traceDetailDialog.data.baseUrl }}</a-descriptions-item>
           <a-descriptions-item label="模型">{{ traceDetailDialog.data.model }}</a-descriptions-item>
+          <a-descriptions-item label="分组名称">{{ traceDetailDialog.data.groupName || '无' }}</a-descriptions-item>
           <a-descriptions-item label="IP地址">{{ traceDetailDialog.data.ip }}</a-descriptions-item>
           <a-descriptions-item label="User Agent">{{ traceDetailDialog.data.userAgent }}</a-descriptions-item>
           <a-descriptions-item label="请求时间">{{ formatDate(traceDetailDialog.data.requestTime) }}</a-descriptions-item>
@@ -130,7 +136,8 @@ export default {
     const traceForm = reactive({
       baseUrl: '',
       key: '',
-      model: ''
+      model: '',
+      groupName: ''
     })
     
     const traceRules = {
@@ -179,6 +186,12 @@ export default {
         width: 120
       },
       {
+        title: '分组名称',
+        dataIndex: 'groupName',
+        key: 'groupName',
+        width: 120
+      },
+      {
         title: 'IP地址',
         dataIndex: 'ip',
         key: 'ip',
@@ -223,7 +236,8 @@ export default {
           const response = await apiClient.post('/traces', {
             baseUrl: traceForm.baseUrl,
             key: traceForm.key,
-            model: traceForm.model
+            model: traceForm.model,
+            groupName: traceForm.groupName || ''
           })
           
           traceSuccess.value = true
@@ -308,6 +322,10 @@ export default {
       
       if (query.model) {
         traceForm.model = query.model
+      }
+      
+      if (query.groupName) {
+        traceForm.groupName = query.groupName
       }
     }, { immediate: true })
     

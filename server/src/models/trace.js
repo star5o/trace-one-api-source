@@ -20,14 +20,15 @@ class TraceModel {
         requestBody,
         responseBody,
         requestTime,
-        responseTime
+        responseTime,
+        groupName
       } = traceData;
       
       db.run(
         `INSERT INTO traces (
           id, traceId, baseUrl, key, model, ip, ipPath, userAgent, headers, 
-          requestBody, responseBody, requestTime, responseTime, createdAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          requestBody, responseBody, requestTime, responseTime, createdAt, groupName
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, 
           traceId, 
@@ -42,7 +43,8 @@ class TraceModel {
           responseBody ? JSON.stringify(responseBody) : null,
           requestTime || now, 
           responseTime || null, 
-          now
+          now,
+          groupName || ''
         ],
         function(err) {
           if (err) {
@@ -62,7 +64,8 @@ class TraceModel {
               responseBody: responseBody ? JSON.stringify(responseBody) : null,
               requestTime: requestTime || now,
               responseTime: responseTime || null,
-              createdAt: now
+              createdAt: now,
+              groupName: groupName || ''
             });
           }
         }
@@ -169,21 +172,37 @@ class TraceModel {
   }
 
   // 获取溯源记录列表（分页）
-  static getAll(page = 1, limit = 10) {
+  static getAll(page = 1, limit = 10, groupName = null) {
     return new Promise((resolve, reject) => {
       const offset = (page - 1) * limit;
       
+      // 构建查询条件
+      let countQuery = 'SELECT COUNT(*) as total FROM traces';
+      let dataQuery = 'SELECT * FROM traces';
+      const queryParams = [];
+      
+      // 如果指定了分组名称，添加过滤条件
+      if (groupName) {
+        countQuery += ' WHERE groupName = ?';
+        dataQuery += ' WHERE groupName = ?';
+        queryParams.push(groupName);
+      }
+      
+      // 添加排序和分页
+      dataQuery += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
+      
       // 获取总记录数
-      db.get('SELECT COUNT(*) as total FROM traces', [], (err, result) => {
+      db.get(countQuery, groupName ? [groupName] : [], (err, result) => {
         if (err) {
           reject(err);
         } else {
           const total = result.total;
           
           // 获取分页数据
+          const finalParams = [...queryParams, limit, offset];
           db.all(
-            'SELECT * FROM traces ORDER BY createdAt DESC LIMIT ? OFFSET ?',
-            [limit, offset],
+            dataQuery,
+            finalParams,
             (err, traces) => {
               if (err) {
                 reject(err);

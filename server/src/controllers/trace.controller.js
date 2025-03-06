@@ -6,7 +6,7 @@ class TraceController {
   // 创建溯源记录并发送请求
   static async create(req, res) {
     try {
-      const { baseUrl, key, model } = req.body;
+      const { baseUrl, key, model, groupName } = req.body;
       
       if (!baseUrl || !key || !model) {
         return res.status(400).json({ message: 'Base URL、API Key和模型ID不能为空' });
@@ -70,7 +70,8 @@ class TraceController {
         userAgent,
         headers: req.headers,
         requestBody: openaiRequest,
-        requestTime
+        requestTime,
+        groupName // 添加分组名称字段
       };
       
       const trace = await TraceModel.create(traceData);
@@ -231,8 +232,9 @@ class TraceController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
+      const groupName = req.query.groupName || null; // 获取分组名称参数
       
-      const traces = await TraceModel.getAll(page, limit);
+      const traces = await TraceModel.getAll(page, limit, groupName);
       res.json(traces);
     } catch (error) {
       console.error('获取溯源记录列表失败:', error);
