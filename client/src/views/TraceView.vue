@@ -13,6 +13,9 @@
         <a-form-item label="模型" required>
           <a-input v-model:value="form.model" placeholder="例如: gpt-4o" />
         </a-form-item>
+        <a-form-item label="分组名称">
+          <a-input v-model:value="form.groupName" placeholder="请输入分组名称（非必填）" />
+        </a-form-item>
         <a-form-item :wrapper-col="{ offset: 4, span: 20 }">
           <a-button type="primary" @click="startTrace" :loading="loading">开始溯源</a-button>
         </a-form-item>
@@ -91,7 +94,8 @@ export default {
       form: {
         baseUrl: '',
         key: '',
-        model: 'gpt-4o'
+        model: 'gpt-4o',
+        groupName: ''
       },
       loading: false,
       currentTrace: null,
@@ -122,6 +126,11 @@ export default {
           title: '模型',
           dataIndex: 'model',
           key: 'model'
+        },
+        {
+          title: '分组名称',
+          dataIndex: 'groupName',
+          key: 'groupName'
         },
         {
           title: '请求时间',
