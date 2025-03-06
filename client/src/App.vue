@@ -216,22 +216,24 @@ export default {
 <style>
 /* 全局样式 */
 :root {
-  --primary-color: #1e88e5;
-  --primary-light: #4b9fea;
-  --primary-dark: #1565c0;
-  --secondary-color: #00d0b0;
-  --accent-color: #ff6b6b;
-  --text-primary: #333333;
-  --text-secondary: #666666;
-  --bg-light: #f5f7fa;
+  --primary-color: #3b82f6;
+  --primary-light: #60a5fa;
+  --primary-dark: #2563eb;
+  --secondary-color: #10b981;
+  --accent-color: #f43f5e;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --bg-light: #f9fafb;
   --bg-white: #ffffff;
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --transition: all 0.3s ease;
+  --bg-card: #ffffff;
+  --border-color: #e5e7eb;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --transition: all 0.2s ease;
 }
 
 /* 基础样式重置 */
@@ -242,6 +244,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: var(--text-primary);
   font-size: 14px;
+  line-height: 1.6;
+  background-color: var(--bg-light);
 }
 
 .app-container {
@@ -250,11 +254,12 @@ body {
   display: flex;
   flex-direction: column;
   background-color: var(--bg-light);
+  overflow-x: hidden;
 }
 
 /* 头部样式 */
 .ant-layout-header {
-  background: #1976d2;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
   line-height: 60px;
   padding: 0 30px;
@@ -262,6 +267,7 @@ body {
   position: relative;
   z-index: 10;
   height: 64px;
+  backdrop-filter: blur(10px);
 }
 
 .header-content {
@@ -273,10 +279,11 @@ body {
 
 .header-content h1 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 600;
   letter-spacing: 0.5px;
   color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .header-right {
@@ -290,30 +297,36 @@ body {
   background: transparent;
   margin-right: 20px;
   line-height: 60px;
+  display: flex;
+  align-items: center;
 }
 
 .ant-menu-horizontal > .ant-menu-item {
-  height: 60px;
-  line-height: 60px;
-  color: #ffffff;
-  font-weight: 400;
+  height: 40px;
+  line-height: 40px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
   font-size: 14px;
   border-bottom: 2px solid transparent;
   transition: var(--transition);
   padding: 0 15px;
   margin: 0;
+  border-radius: var(--radius-md);
+  margin: 0 5px;
 }
 
 .ant-menu-horizontal > .ant-menu-item-selected {
   color: #ffffff;
-  border-bottom: 2px solid #ffffff;
-  background-color: rgba(255, 255, 255, 0.15);
-  font-weight: 500;
+  border-bottom: none;
+  background-color: rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .ant-menu-horizontal > .ant-menu-item:hover {
   color: white;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
 }
 
 /* 用户信息样式 */
@@ -328,12 +341,13 @@ body {
   align-items: center;
   cursor: pointer;
   color: #ffffff;
-  font-weight: 400;
+  font-weight: 500;
   font-size: 14px;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
   transition: var(--transition);
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .username-text {
@@ -341,13 +355,17 @@ body {
 }
 
 .user-avatar {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.25);
   color: #ffffff;
   font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .user-dropdown-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .user-dropdown-link .anticon {
@@ -368,6 +386,12 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 16px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-white);
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .footer-content p {

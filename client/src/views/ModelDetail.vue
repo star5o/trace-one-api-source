@@ -1,12 +1,15 @@
 <template>
   <div class="model-detail page-container">
-    <a-card>
-      <template #title>
-        <div class="card-header">
-          <span class="title">模型溯源记录</span>
-          <a-button @click="goBack">返回</a-button>
-        </div>
-      </template>
+    <div class="page-header">
+      <h1 class="page-title">模型溯源记录</h1>
+      <div class="page-actions">
+        <a-button @click="goBack" class="back-button">
+          <template #icon><arrow-left-outlined /></template>
+          返回
+        </a-button>
+      </div>
+    </div>
+    <a-card class="main-card" :bordered="false">
       
       <div v-if="loading" class="loading-container">
         <a-skeleton :rows="5" active />
@@ -82,10 +85,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { message } from 'ant-design-vue'
+import { ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { apiClient, API_BASE_URL } from '../utils/api'
 
 export default {
   name: 'ModelDetail',
+  components: {
+    ArrowLeftOutlined
+  },
   setup() {
     // 定义表格列
     const columns = [
@@ -234,31 +241,230 @@ export default {
 </script>
 
 <style scoped>
+/* 页面布局 */
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  position: relative;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: var(--primary-color);
+  border-radius: 3px;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.back-button {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  height: 38px;
+  padding: 0 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 卡片样式 */
+.main-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+:deep(.ant-card-body) {
+  padding: 24px;
+}
+
 .loading-container {
   padding: 20px 0;
 }
 
+/* 溯源记录样式 */
 .trace-records {
   margin-top: 30px;
+}
+
+:deep(.ant-descriptions) {
+  background-color: var(--bg-white);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+:deep(.ant-descriptions-title) {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 16px 24px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(59, 130, 246, 0.03);
+}
+
+:deep(.ant-descriptions-item-label) {
+  background-color: rgba(59, 130, 246, 0.05);
+  font-weight: 500;
+}
+
+:deep(.ant-divider) {
+  margin: 32px 0 24px;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+:deep(.ant-divider::before),
+:deep(.ant-divider::after) {
+  border-top-color: var(--border-color);
 }
 
 .records-table {
   margin-top: 20px;
 }
 
+/* 表格样式 */
+:deep(.ant-table) {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+:deep(.ant-table-thead > tr > th) {
+  background-color: rgba(59, 130, 246, 0.05);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+:deep(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid var(--border-color);
+}
+
+:deep(.ant-table-tbody > tr:hover > td) {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+:deep(.ant-table-tbody > tr:last-child > td) {
+  border-bottom: none;
+}
+
+:deep(.ant-btn) {
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+:deep(.ant-btn:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.empty-data {
+  padding: 32px 0;
+  text-align: center;
+  background-color: var(--bg-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+:deep(.ant-empty-description) {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
+}
+
+:deep(.ant-pagination-item) {
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+:deep(.ant-pagination-item-active) {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+:deep(.ant-pagination-item-active a) {
+  color: white;
+}
+
+:deep(.ant-pagination-item:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 溯源详情对话框样式 */
+:deep(.ant-modal-content) {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+:deep(.ant-modal-header) {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-white);
+}
+
+:deep(.ant-modal-title) {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+:deep(.ant-modal-body) {
+  padding: 24px;
+  background-color: var(--bg-light);
+}
+
+:deep(.ant-modal-footer) {
+  border-top: 1px solid var(--border-color);
+  padding: 12px 24px;
+  background-color: var(--bg-white);
 }
 
 pre {
   white-space: pre-wrap;
   word-wrap: break-word;
-  background-color: #f5f7fa;
-  padding: 10px;
-  border-radius: 4px;
-  max-height: 200px;
+  background-color: #f8fafc;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  max-height: 300px;
   overflow-y: auto;
+  border: 1px solid var(--border-color);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #334155;
 }
 </style>
