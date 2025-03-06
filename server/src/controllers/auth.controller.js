@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { verifyUser, createUser, getAllUsers, updateUser, deleteUser } = require('../models/user');
+const { verifyUser, createUser, getAllUsers, updateUser, deleteUser, findUserById } = require('../models/user');
 
 // JWT密钥，实际生产环境应该使用环境变量
 const JWT_SECRET = process.env.JWT_SECRET || 'openai-proxy-manager-secret-key';
@@ -168,6 +168,45 @@ const removeUser = async (req, res) => {
   }
 };
 
+// 修改密码
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: '当前密码和新密码不能为空' });
+    }
+    
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: '新密码不能与当前密码相同' });
+    }
+    
+    // 验证当前密码是否正确
+    const user = await findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    const { username } = user;
+    const verifiedUser = await verifyUser(username, currentPassword);
+    
+    if (!verifiedUser) {
+      return res.status(401).json({ error: '当前密码不正确' });
+    }
+    
+    // 更新密码
+    await updateUser(userId, { password: newPassword });
+    
+    res.json({
+      message: '密码修改成功'
+    });
+  } catch (error) {
+    console.error('修改密码失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+};
+
 module.exports = {
   login,
   register,
@@ -175,5 +214,6 @@ module.exports = {
   getUsers,
   updateUserInfo,
   removeUser,
+  changePassword,
   JWT_SECRET
 };

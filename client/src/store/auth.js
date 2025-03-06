@@ -115,10 +115,33 @@ export const checkAuth = () => {
   };
 };
 
+// 修改密码
+export const changePassword = async (currentPassword, newPassword) => {
+  if (!state.token) {
+    return { success: false, error: '未登录' };
+  }
+  
+  try {
+    const response = await axios.post('/api/auth/change-password', { 
+      currentPassword, 
+      newPassword 
+    });
+    
+    return { success: true, message: response.data.message };
+  } catch (error) {
+    console.error('修改密码失败:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.error || '修改密码失败' 
+    };
+  }
+};
+
 export default {
   state,
   login,
   logout,
   getCurrentUser,
-  checkAuth
+  checkAuth,
+  changePassword
 };
