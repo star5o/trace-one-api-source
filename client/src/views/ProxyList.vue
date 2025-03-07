@@ -158,6 +158,12 @@
               <a-button type="primary" @click="openAddGroupDialog"
                 >添加分组</a-button
               >
+              <a-button 
+                type="primary" 
+                @click="autoFetchGroups" 
+                style="margin-left: 8px"
+                >自动获取分组</a-button
+              >
             </div>
 
             <div
@@ -693,6 +699,35 @@ export default {
         message.error("刷新模型列表失败");
       }
     };
+    
+    // 自动获取分组
+    const autoFetchGroups = async () => {
+      if (!currentProxy.value) return;
+      
+      try {
+        message.info("正在自动获取分组，请稍候...");
+        const response = await apiClient.post(`/proxies/${currentProxy.value.id}/auto-fetch-groups`);
+        
+        if (response.data && response.data.success) {
+          const count = response.data.count || 0;
+          message.success(`自动获取分组成功，新增 ${count} 个分组`);
+        } else {
+          message.success("自动获取分组成功");
+        }
+        
+        fetchProxyList();
+        // 更新当前显示的中转站详情
+        if (currentProxy.value) {
+          const detailResponse = await apiClient.get(
+            `/proxies/${currentProxy.value.id}`
+          );
+          currentProxy.value = detailResponse.data;
+        }
+      } catch (error) {
+        console.error("自动获取分组失败:", error);
+        message.error("自动获取分组失败");
+      }
+    };
 
     // 发送到溯源页面
     const sendToTrace = (proxy, group, model) => {
@@ -804,6 +839,7 @@ export default {
       modelColumns,
       confirmDeleteGroup,
       refreshModels,
+      autoFetchGroups,
       sendToTrace,
       viewModelDetail,
       editModelRemark,

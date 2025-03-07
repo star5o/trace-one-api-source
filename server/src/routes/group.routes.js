@@ -21,4 +21,7 @@ router.delete('/groups/:id', GroupController.delete);
 // 刷新分组的模型列表
 router.post('/groups/:id/refresh-models', GroupController.refreshModels);
 
+// 自动获取分组
+router.post('/proxies/:proxyId/auto-fetch-groups', GroupController.autoFetchGroups);
+
 module.exports = router;
