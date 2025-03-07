@@ -270,7 +270,20 @@ class GroupModel {
           timeout: 5000
         });
         
-        if (pricingResponse.data && pricingResponse.data.data) {
+        // 处理第三种格式：直接在根层级的 usable_group
+        if (pricingResponse.data && pricingResponse.data.usable_group) {
+          const usableGroups = pricingResponse.data.usable_group;
+          for (const [key, value] of Object.entries(usableGroups)) {
+            groups.push({
+              name: key,
+              desc: value,
+              key: key
+            });
+          }
+          success = true;
+        }
+        // 处理第一、二种格式：在 data 层级的数据
+        else if (pricingResponse.data && pricingResponse.data.data) {
           // 处理第一种格式：usable_group
           if (pricingResponse.data.data.usable_group) {
             const usableGroups = pricingResponse.data.data.usable_group;
