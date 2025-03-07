@@ -88,8 +88,17 @@
                   </div>
 
                   <div v-else class="model-table">
+                    <div class="model-search">
+                      <a-input-search
+                        v-model:value="modelSearchText"
+                        placeholder="搜索模型名称或ID"
+                        style="width: 300px; margin-bottom: 16px"
+                        @change="handleModelSearch"
+                        allowClear
+                      />
+                    </div>
                     <a-table
-                      :dataSource="group.models"
+                      :dataSource="getFilteredModels(group.models)"
                       :columns="modelColumns"
                       :scroll="{ x: 'max-content' }"
                       bordered
@@ -806,6 +815,30 @@ export default {
 
     // 用于存储模型备注输入值
     let modelRemarkInput = "";
+    
+    // 模型搜索文本
+    const modelSearchText = ref("");
+    
+    // 处理模型搜索
+    const handleModelSearch = () => {
+      // 搜索文本改变时自动触发过滤，不需要额外操作
+    };
+    
+    // 获取过滤后的模型列表
+    const getFilteredModels = (models) => {
+      if (!modelSearchText.value) {
+        return models;
+      }
+      
+      const searchText = modelSearchText.value.toLowerCase();
+      return models.filter(model => {
+        return (
+          (model.id && model.id.toLowerCase().includes(searchText)) ||
+          (model.name && model.name.toLowerCase().includes(searchText)) ||
+          (model.remark && model.remark.toLowerCase().includes(searchText))
+        );
+      });
+    };
 
     onMounted(() => {
       fetchProxyList();
@@ -843,6 +876,9 @@ export default {
       sendToTrace,
       viewModelDetail,
       editModelRemark,
+      modelSearchText,
+      handleModelSearch,
+      getFilteredModels,
     };
   },
 };
