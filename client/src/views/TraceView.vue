@@ -334,7 +334,7 @@ export default {
       
       // 构建URL并跳转
       const reverseCheckUrl = new URL('https://reverse-check.no-reverse-api.com/');
-      reverseCheckUrl.searchParams.append('baseUrl', baseUrl);
+      reverseCheckUrl.searchParams.append('apiBaseUrl', baseUrl);
       reverseCheckUrl.searchParams.append('apiKey', this.form.key); // 使用表单中的API Key
       reverseCheckUrl.searchParams.append('model', this.form.model);
       reverseCheckUrl.searchParams.append('testParam', 'max_tokens');
