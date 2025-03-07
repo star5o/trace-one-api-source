@@ -18,6 +18,7 @@
         </a-form-item>
         <a-form-item :wrapper-col="{ offset: 4, span: 20 }">
           <a-button type="primary" @click="startTrace" :loading="loading">开始溯源</a-button>
+          <a-button type="primary" @click="sendToReverseCheck" style="margin-left: 8px">发送到逆向检查</a-button>
         </a-form-item>
       </a-form>
     </a-card>
@@ -318,6 +319,25 @@ export default {
       if (!timestamp) return '未知';
       const date = new Date(parseInt(timestamp));
       return date.toLocaleString();
+    },
+    
+    // 发送到逆向检查网站
+    sendToReverseCheck() {
+      if (!this.form.baseUrl || !this.form.model) {
+        message.warning('请至少填写中转站URL和模型字段');
+        return;
+      }
+      
+      // 构建URL并跳转
+      const reverseCheckUrl = new URL('https://reverse-check.no-reverse-api.com/');
+      reverseCheckUrl.searchParams.append('baseUrl', this.form.baseUrl);
+      reverseCheckUrl.searchParams.append('apiKey', this.form.key); // 使用表单中的API Key
+      reverseCheckUrl.searchParams.append('model', this.form.model);
+      reverseCheckUrl.searchParams.append('testParam', 'max_tokens');
+      reverseCheckUrl.searchParams.append('provider', 'openai');
+      
+      // 在新标签页中打开URL
+      window.open(reverseCheckUrl.toString(), '_blank');
     }
   }
 };
