@@ -53,8 +53,8 @@ class ModelController {
       // 查询数据
       const dataQuery = `
         SELECT 
-          m.id, m.groupId, m.remark, m.price_data, m.createdAt, m.updatedAt,
-          g.id as group_id, g.name as group_name, g.price_data as group_price_data, g.proxyId,
+          m.id, m.groupId, m.remark, m.raw_data, m.createdAt, m.updatedAt,
+          g.id as group_id, g.name as group_name, g.proxyId,
           p.id as proxy_id, p.name as proxy_name, p.baseUrl, p.exchangeRate
         FROM models m
         JOIN groups g ON m.groupId = g.id
@@ -80,33 +80,15 @@ class ModelController {
             return res.status(500).json({ message: '查询模型列表失败', error: err.message });
           }
           
-          // 处理数据，计算价格
+          // 处理数据，使用默认价格
           const processedModels = models.map(model => {
-            // 解析价格数据
-            let modelPriceData = {};
-            let groupPriceData = {};
+            // 对于每个模型，我们使用默认价格设置
+            // 在实际应用中，可能需要从其他表中获取价格信息
+            const groupRatio = 1;
+            const modelRatio = 1;
+            const completionRatio = 1;
             
-            try {
-              if (model.price_data) {
-                modelPriceData = typeof model.price_data === 'string' 
-                  ? JSON.parse(model.price_data) 
-                  : model.price_data;
-              }
-              
-              if (model.group_price_data) {
-                groupPriceData = typeof model.group_price_data === 'string' 
-                  ? JSON.parse(model.group_price_data) 
-                  : model.group_price_data;
-              }
-            } catch (e) {
-              console.error('解析价格数据失败:', e);
-            }
-            
-            // 计算价格
-            const groupRatio = groupPriceData.group_ratio || 1;
-            const modelRatio = modelPriceData.model_ratio || 1;
-            const completionRatio = modelPriceData.completion_ratio || 1;
-            
+            // 计算默认价格
             const inputPrice = groupRatio * modelRatio * 2;
             const outputPrice = inputPrice * completionRatio;
             
