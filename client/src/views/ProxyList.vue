@@ -166,6 +166,14 @@
                             style="margin-left: 8px"
                             >编辑备注</a-button
                           >
+                          <a-button
+                            size="small"
+                            @click="
+                              editPriceParams(currentProxy, group, record)
+                            "
+                            style="margin-left: 8px"
+                            >编辑价格参数</a-button
+                          >
                         </template>
                       </template>
                     </a-table>
@@ -312,6 +320,14 @@
       width="500px"
       @ok="submitGroupForm"
     >
+    
+    <!-- 编辑模型价格参数对话框 -->
+    <a-modal
+      v-model:open="priceParamsDialog.visible"
+      title="编辑价格参数"
+      width="500px"
+      @ok="submitPriceParamsForm"
+    >
       <a-form
         ref="groupFormRef"
         :model="groupForm"
@@ -339,6 +355,57 @@
       <template #footer>
         <a-button @click="groupDialog.visible = false">取消</a-button>
         <a-button type="primary" @click="submitGroupForm">确定</a-button>
+      </template>
+    </a-modal>
+
+    <!-- 编辑模型价格参数对话框 -->
+    <a-modal
+      v-model:open="priceParamsDialog.visible"
+      title="编辑价格参数"
+      width="500px"
+      @ok="submitPriceParamsForm"
+    >
+      <a-form
+        ref="priceParamsFormRef"
+        :model="priceParamsForm"
+        layout="horizontal"
+        :label-col="{ span: 8 }"
+        :wrapper-col="{ span: 16 }"
+      >
+        <a-form-item label="分组倍率" name="group_ratio">
+          <a-input-number
+            v-model:value="priceParamsForm.group_ratio"
+            :min="0"
+            :step="0.01"
+            style="width: 100%"
+          />
+        </a-form-item>
+        <a-form-item label="模型倍率" name="model_ratio">
+          <a-input-number
+            v-model:value="priceParamsForm.model_ratio"
+            :min="0"
+            :step="0.01"
+            style="width: 100%"
+          />
+        </a-form-item>
+        <a-form-item label="补全倍率" name="completion_ratio">
+          <a-input-number
+            v-model:value="priceParamsForm.completion_ratio"
+            :min="0"
+            :step="0.01"
+            style="width: 100%"
+          />
+        </a-form-item>
+        <a-form-item label="计算结果" :wrapper-col="{ span: 16 }">
+          <div>
+            <p>输入价格: {{ calculatedInputPrice }} 美元/M tokens</p>
+            <p>输出价格: {{ calculatedOutputPrice }} 美元/M tokens</p>
+          </div>
+        </a-form-item>
+      </a-form>
+      <template #footer>
+        <a-button @click="priceParamsDialog.visible = false">取消</a-button>
+        <a-button type="primary" @click="submitPriceParamsForm">确定</a-button>
       </template>
     </a-modal>
   </div>
@@ -1078,6 +1145,11 @@ export default {
       groupForm,
       groupRules,
       groupDialog,
+      priceParamsDialog,
+      priceParamsFormRef,
+      priceParamsForm,
+      calculatedInputPrice,
+      calculatedOutputPrice,
       formatDate,
       getModelCount,
       hasModels,
@@ -1099,6 +1171,8 @@ export default {
       sendToTrace,
       viewModelDetail,
       editModelRemark,
+      editPriceParams,
+      submitPriceParamsForm,
       modelSearchText,
       handleModelSearch,
       getFilteredModels,
