@@ -104,10 +104,9 @@
                       <div class="model-buttons">
                         <a-button 
                           type="primary" 
-                          @click="fetchModelPrices(currentProxy, group)"
-                          :loading="fetchingPrices"
+                          @click="refreshModels(currentProxy, group)"
                         >
-                          自动获取价格
+                          刷新模型
                         </a-button>
                       </div>
                     </div>
@@ -202,9 +201,9 @@
               >
               <a-button 
                 type="primary" 
-                @click="autoFetchGroups" 
+                @click="fetchGroupsAndPrices" 
                 style="margin-left: 8px"
-                >自动获取分组</a-button
+                >获取分组和价格</a-button
               >
             </div>
 
@@ -776,34 +775,79 @@ export default {
       }
     };
     
-    // 自动获取分组
-    const autoFetchGroups = async () => {
+    // 获取分组和价格
+    const fetchGroupsAndPrices = async () => {
       if (!currentProxy.value) return;
       
       try {
-        message.info("正在自动获取分组，请稍候...");
+        message.info("正在获取分组和价格，请稍候...");
+        
+        // 第一步：获取分组
         const response = await apiClient.post(`/proxies/${currentProxy.value.id}/auto-fetch-groups`);
         
+        let groupsAdded = 0;
         if (response.data && response.data.success) {
-          const count = response.data.count || 0;
-          message.success(`自动获取分组成功，新增 ${count} 个分组`);
-        } else {
-          message.success("自动获取分组成功");
+          groupsAdded = response.data.count || 0;
         }
         
-        fetchProxyList();
-        // 更新当前显示的中转站详情
+        // 更新中转站详情
+        await fetchProxyList();
         if (currentProxy.value) {
           const detailResponse = await apiClient.get(
             `/proxies/${currentProxy.value.id}`
           );
           currentProxy.value = detailResponse.data;
+          
+          // 第二步：获取所有模型价格
+          fetchingPrices.value = true;
+          try {
+            const priceResponse = await apiClient.get(`/proxies/${currentProxy.value.id}/model-prices`);
+            
+            if (priceResponse.data && priceResponse.data.success && priceResponse.data.modelPrices) {
+              const modelPrices = priceResponse.data.modelPrices;
+              let updatedCount = 0;
+              
+              // 遍历所有分组
+              if (currentProxy.value.groups && currentProxy.value.groups.length > 0) {
+                currentProxy.value.groups.forEach(group => {
+                  // 找到当前分组的价格信息
+                  const groupPrices = modelPrices[group.key];
+                  
+                  if (groupPrices && group.models && group.models.length > 0) {
+                    // 更新模型价格信息
+                    group.models.forEach(model => {
+                      if (groupPrices[model.id]) {
+                        model.prices = groupPrices[model.id];
+                        updatedCount++;
+                      }
+                    });
+                  }
+                });
+                
+                // 显示成功信息
+                message.success(`成功获取分组和价格！新增 ${groupsAdded} 个分组，更新 ${updatedCount} 个模型的价格信息`);
+              } else {
+                message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但没有获取到模型价格`);
+              }
+            } else {
+              message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但获取价格失败`);
+            }
+          } catch (priceError) {
+            console.error("获取模型价格失败:", priceError);
+            message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但获取价格失败`);
+          } finally {
+            fetchingPrices.value = false;
+          }
         }
       } catch (error) {
-        console.error("自动获取分组失败:", error);
-        message.error("自动获取分组失败");
+        console.error("获取分组和价格失败:", error);
+        message.error("获取分组和价格失败");
+        fetchingPrices.value = false;
       }
     };
+    
+    // 自动获取分组 (保留兼容性)
+    const autoFetchGroups = fetchGroupsAndPrices;
 
     // 发送到溯源页面
     const sendToTrace = (proxy, group, model) => {
@@ -910,7 +954,59 @@ export default {
     // 价格获取状态
     const fetchingPrices = ref(false);
     
-    // 获取模型价格信息
+    // 获取所有模型价格信息
+    const fetchAllModelPrices = async (proxy) => {
+      if (!proxy || !proxy.id) {
+        message.error("中转站信息不完整");
+        return;
+      }
+      
+      fetchingPrices.value = true;
+      
+      try {
+        const response = await apiClient.get(`/proxies/${proxy.id}/model-prices`);
+        
+        if (response.data && response.data.success && response.data.modelPrices) {
+          const modelPrices = response.data.modelPrices;
+          let updatedCount = 0;
+          
+          // 遍历所有分组
+          if (proxy.groups && proxy.groups.length > 0) {
+            proxy.groups.forEach(group => {
+              // 找到当前分组的价格信息
+              const groupPrices = modelPrices[group.key];
+              
+              if (groupPrices && group.models && group.models.length > 0) {
+                // 更新模型价格信息
+                group.models.forEach(model => {
+                  if (groupPrices[model.id]) {
+                    model.prices = groupPrices[model.id];
+                    updatedCount++;
+                  }
+                });
+              }
+            });
+            
+            if (updatedCount > 0) {
+              message.success(`成功获取 ${updatedCount} 个模型的价格信息`);
+            } else {
+              message.warning("没有获取到任何模型的价格信息");
+            }
+          } else {
+            message.warning("当前中转站没有分组数据");
+          }
+        } else {
+          message.error("获取模型价格失败");
+        }
+      } catch (error) {
+        console.error("获取模型价格失败:", error);
+        message.error("获取模型价格失败");
+      } finally {
+        fetchingPrices.value = false;
+      }
+    };
+    
+    // 获取单个分组的模型价格信息
     const fetchModelPrices = async (proxy, group) => {
       if (!proxy || !proxy.id) {
         message.error("中转站信息不完整");
@@ -987,6 +1083,7 @@ export default {
       modelColumns,
       confirmDeleteGroup,
       refreshModels,
+      fetchGroupsAndPrices,
       autoFetchGroups,
       sendToTrace,
       viewModelDetail,
@@ -994,6 +1091,7 @@ export default {
       modelSearchText,
       handleModelSearch,
       getFilteredModels,
+      fetchAllModelPrices,
       fetchModelPrices,
       fetchingPrices,
     };
