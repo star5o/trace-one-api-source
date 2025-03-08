@@ -108,6 +108,16 @@ class ProxyModel {
                           // 如果解析失败，保持原样
                         }
                       }
+                      
+                      // 获取价格信息
+                      if (model.price_data) {
+                        try {
+                          const priceData = JSON.parse(model.price_data);
+                          model.prices = priceData;
+                        } catch (e) {
+                          console.error('解析价格数据失败:', e);
+                        }
+                      }
                     });
                     resolve(models);
                   }
@@ -160,6 +170,16 @@ class ProxyModel {
                             model.raw_data = JSON.parse(model.raw_data);
                           } catch (e) {
                             // 如果解析失败，保持原样
+                          }
+                        }
+                        
+                        // 获取价格信息
+                        if (model.price_data) {
+                          try {
+                            const priceData = JSON.parse(model.price_data);
+                            model.prices = priceData;
+                          } catch (e) {
+                            console.error('解析价格数据失败:', e);
                           }
                         }
                       });
