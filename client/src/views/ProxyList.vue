@@ -166,6 +166,14 @@
                             style="margin-left: 8px"
                             >编辑备注</a-button
                           >
+                          <a-button
+                            size="small"
+                            @click="
+                              editModelPriceParams(currentProxy, group, record)
+                            "
+                            style="margin-left: 8px"
+                            >编辑价格参数</a-button
+                          >
                         </template>
                       </template>
                     </a-table>
@@ -339,6 +347,66 @@
       <template #footer>
         <a-button @click="groupDialog.visible = false">取消</a-button>
         <a-button type="primary" @click="submitGroupForm">确定</a-button>
+      </template>
+    </a-modal>
+
+    <!-- 编辑模型价格参数对话框 -->
+    <a-modal
+      v-model:open="priceParamsDialog.visible"
+      title="编辑价格参数"
+      width="500px"
+      @ok="submitPriceParamsForm"
+    >
+      <a-form
+        ref="priceParamsFormRef"
+        :model="priceParamsForm"
+        :rules="priceParamsRules"
+        layout="horizontal"
+        :label-col="{ span: 8 }"
+        :wrapper-col="{ span: 16 }"
+      >
+        <a-form-item label="模型名称" name="modelId">
+          <a-input v-model:value="priceParamsForm.modelId" disabled />
+        </a-form-item>
+        <a-form-item label="分组倍率" name="groupRatio">
+          <a-input-number 
+            v-model:value="priceParamsForm.groupRatio" 
+            :min="0.01" 
+            :max="100" 
+            :step="0.01" 
+            style="width: 100%" 
+          />
+        </a-form-item>
+        <a-form-item label="模型倍率" name="modelRatio">
+          <a-input-number 
+            v-model:value="priceParamsForm.modelRatio" 
+            :min="0.01" 
+            :max="100" 
+            :step="0.01" 
+            style="width: 100%" 
+          />
+        </a-form-item>
+        <a-form-item label="补全倍率" name="completionRatio">
+          <a-input-number 
+            v-model:value="priceParamsForm.completionRatio" 
+            :min="0.01" 
+            :max="100" 
+            :step="0.01" 
+            style="width: 100%" 
+          />
+        </a-form-item>
+        <a-form-item label="计算结果" name="calculatedPrices">
+          <div>
+            <p>输入价格 = 分组倍率 × 模型倍率 × 2</p>
+            <p><strong>{{ calculateInputPrice() }} 美元/M tokens</strong></p>
+            <p>输出价格 = 输入价格 × 补全倍率</p>
+            <p><strong>{{ calculateOutputPrice() }} 美元/M tokens</strong></p>
+          </div>
+        </a-form-item>
+      </a-form>
+      <template #footer>
+        <a-button @click="priceParamsDialog.visible = false">取消</a-button>
+        <a-button type="primary" @click="submitPriceParamsForm">确定</a-button>
       </template>
     </a-modal>
   </div>
@@ -938,6 +1006,129 @@ export default {
     // 用于存储模型备注输入值
     let modelRemarkInput = "";
     
+    // 价格参数对话框
+    const priceParamsFormRef = ref(null);
+    const priceParamsDialog = reactive({
+      visible: false,
+      currentProxy: null,
+      currentGroup: null,
+      currentModel: null
+    });
+    
+    // 价格参数表单
+    const priceParamsForm = reactive({
+      modelId: '',
+      groupRatio: 1,
+      modelRatio: 1,
+      completionRatio: 1
+    });
+    
+    // 价格参数表单验证规则
+    const priceParamsRules = {
+      groupRatio: [
+        { required: true, message: '请输入分组倍率', trigger: 'blur' },
+        { type: 'number', min: 0.01, message: '倍率必须大于0.01', trigger: 'blur' }
+      ],
+      modelRatio: [
+        { required: true, message: '请输入模型倍率', trigger: 'blur' },
+        { type: 'number', min: 0.01, message: '倍率必须大于0.01', trigger: 'blur' }
+      ],
+      completionRatio: [
+        { required: true, message: '请输入补全倍率', trigger: 'blur' },
+        { type: 'number', min: 0.01, message: '倍率必须大于0.01', trigger: 'blur' }
+      ]
+    };
+    
+    // 计算输入价格
+    const calculateInputPrice = () => {
+      const inputPrice = priceParamsForm.groupRatio * priceParamsForm.modelRatio * 2;
+      return inputPrice.toFixed(4);
+    };
+    
+    // 计算输出价格
+    const calculateOutputPrice = () => {
+      const inputPrice = priceParamsForm.groupRatio * priceParamsForm.modelRatio * 2;
+      const outputPrice = inputPrice * priceParamsForm.completionRatio;
+      return outputPrice.toFixed(4);
+    };
+    
+    // 编辑模型价格参数
+    const editModelPriceParams = (proxy, group, model) => {
+      priceParamsDialog.currentProxy = proxy;
+      priceParamsDialog.currentGroup = group;
+      priceParamsDialog.currentModel = model;
+      
+      // 初始化表单数据
+      priceParamsForm.modelId = model.id;
+      
+      // 从模型中获取价格参数
+      if (model.prices) {
+        priceParamsForm.groupRatio = model.prices.group_ratio || 1;
+        priceParamsForm.modelRatio = model.prices.model_ratio || 1;
+        priceParamsForm.completionRatio = model.prices.completion_ratio || 1;
+      } else {
+        // 默认值
+        priceParamsForm.groupRatio = 1;
+        priceParamsForm.modelRatio = 1;
+        priceParamsForm.completionRatio = 1;
+      }
+      
+      priceParamsDialog.visible = true;
+    };
+    
+    // 提交价格参数表单
+    const submitPriceParamsForm = async () => {
+      if (!priceParamsFormRef.value) return;
+      
+      try {
+        await priceParamsFormRef.value.validate();
+        
+        const { currentProxy, currentGroup, currentModel } = priceParamsDialog;
+        
+        if (!currentProxy || !currentGroup || !currentModel) {
+          message.error('模型信息不完整');
+          return;
+        }
+        
+        // 准备要保存的价格参数数据
+        const priceData = {
+          group_ratio: priceParamsForm.groupRatio,
+          model_ratio: priceParamsForm.modelRatio,
+          completion_ratio: priceParamsForm.completionRatio
+        };
+        
+        try {
+          // 发送请求更新模型的价格参数
+          await apiClient.put(`/models/${currentModel.id}/price-params`, priceData);
+          
+          // 更新前端模型对象的价格信息
+          const inputPrice = priceParamsForm.groupRatio * priceParamsForm.modelRatio * 2;
+          const outputPrice = inputPrice * priceParamsForm.completionRatio;
+          
+          if (!currentModel.prices) {
+            currentModel.prices = {};
+          }
+          
+          // 更新价格参数
+          currentModel.prices.group_ratio = priceParamsForm.groupRatio;
+          currentModel.prices.model_ratio = priceParamsForm.modelRatio;
+          currentModel.prices.completion_ratio = priceParamsForm.completionRatio;
+          
+          // 更新计算结果
+          currentModel.prices.input_price = inputPrice;
+          currentModel.prices.output_price = outputPrice;
+          
+          message.success('价格参数更新成功');
+          priceParamsDialog.visible = false;
+        } catch (error) {
+          console.error('更新价格参数失败:', error);
+          message.error('更新价格参数失败: ' + (error.response?.data?.message || error.message || '未知错误'));
+        }
+      } catch (e) {
+        // 表单验证失败
+      }
+    };
+    
     // 模型搜索文本
     const modelSearchText = ref("");
     
@@ -1105,6 +1296,15 @@ export default {
       fetchAllModelPrices,
       fetchModelPrices,
       fetchingPrices,
+      // 价格参数相关
+      priceParamsFormRef,
+      priceParamsDialog,
+      priceParamsForm,
+      priceParamsRules,
+      calculateInputPrice,
+      calculateOutputPrice,
+      editModelPriceParams,
+      submitPriceParamsForm,
     };
   },
 };
