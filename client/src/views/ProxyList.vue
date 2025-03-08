@@ -203,7 +203,7 @@
                 type="primary" 
                 @click="fetchGroupsAndPrices" 
                 style="margin-left: 8px"
-                >获取分组和价格</a-button
+                >一键获取分组、模型和价格</a-button
               >
             </div>
 
@@ -775,12 +775,12 @@ export default {
       }
     };
     
-    // 获取分组和价格
+    // 一键获取分组、模型和价格
     const fetchGroupsAndPrices = async () => {
       if (!currentProxy.value) return;
       
       try {
-        message.info("正在获取分组和价格，请稍候...");
+        message.info("正在一键获取分组、模型和价格，请稍候...");
         
         // 第一步：获取分组
         const response = await apiClient.post(`/proxies/${currentProxy.value.id}/auto-fetch-groups`);
@@ -798,7 +798,28 @@ export default {
           );
           currentProxy.value = detailResponse.data;
           
-          // 第二步：获取所有模型价格
+          // 第二步：对每个分组获取模型列表
+          let modelsAdded = 0;
+          if (currentProxy.value.groups && currentProxy.value.groups.length > 0) {
+            // 为每个分组获取模型
+            for (const group of currentProxy.value.groups) {
+              try {
+                await apiClient.post(`/groups/${group.id}/refresh-models`);
+                if (!group.models) group.models = [];
+                modelsAdded += group.models.length;
+              } catch (modelError) {
+                console.error(`获取分组 ${group.name} 的模型列表失败:`, modelError);
+              }
+            }
+            
+            // 再次更新中转站详情，获取最新的模型列表
+            const updatedResponse = await apiClient.get(
+              `/proxies/${currentProxy.value.id}`
+            );
+            currentProxy.value = updatedResponse.data;
+          }
+          
+          // 第三步：获取所有模型价格
           fetchingPrices.value = true;
           try {
             const priceResponse = await apiClient.get(`/proxies/${currentProxy.value.id}/model-prices`);
@@ -825,23 +846,23 @@ export default {
                 });
                 
                 // 显示成功信息
-                message.success(`成功获取分组和价格！新增 ${groupsAdded} 个分组，更新 ${updatedCount} 个模型的价格信息`);
+                message.success(`一键获取成功！新增 ${groupsAdded} 个分组，${modelsAdded} 个模型，更新 ${updatedCount} 个模型的价格信息`);
               } else {
-                message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但没有获取到模型价格`);
+                message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但没有获取到模型数据`);
               }
             } else {
-              message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但获取价格失败`);
+              message.success(`成功获取分组和模型！新增 ${groupsAdded} 个分组，${modelsAdded} 个模型，但获取价格失败`);
             }
           } catch (priceError) {
             console.error("获取模型价格失败:", priceError);
-            message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但获取价格失败`);
+            message.success(`成功获取分组和模型！新增 ${groupsAdded} 个分组，${modelsAdded} 个模型，但获取价格失败`);
           } finally {
             fetchingPrices.value = false;
           }
         }
       } catch (error) {
-        console.error("获取分组和价格失败:", error);
-        message.error("获取分组和价格失败");
+        console.error("一键获取分组、模型和价格失败:", error);
+        message.error("一键获取分组、模型和价格失败");
         fetchingPrices.value = false;
       }
     };
