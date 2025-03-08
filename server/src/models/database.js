@@ -32,6 +32,7 @@ const initDatabase = () => {
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           baseUrl TEXT NOT NULL,
+          exchangeRate REAL DEFAULT 7.0,
           createdAt INTEGER NOT NULL,
           updatedAt INTEGER NOT NULL
         )

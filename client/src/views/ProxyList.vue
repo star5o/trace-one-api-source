@@ -17,7 +17,10 @@
       <div v-else class="proxy-table">
         <a-table :dataSource="proxyList" :columns="proxyColumns" bordered>
           <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'groupCount'">
+            <template v-if="column.key === 'exchangeRate'">
+              {{ record.exchangeRate ? `${record.exchangeRate} 人民币/美元` : '7.0 人民币/美元' }}
+            </template>
+            <template v-else-if="column.key === 'groupCount'">
               {{ record.groups ? record.groups.length : 0 }}
             </template>
             <template v-else-if="column.key === 'modelCount'">
@@ -88,14 +91,25 @@
                   </div>
 
                   <div v-else class="model-table">
-                    <div class="model-search">
-                      <a-input-search
-                        v-model:value="modelSearchText"
-                        placeholder="搜索模型名称或ID"
-                        style="width: 300px; margin-bottom: 16px"
-                        @change="handleModelSearch"
-                        allowClear
-                      />
+                    <div class="model-actions">
+                      <div class="model-search">
+                        <a-input-search
+                          v-model:value="modelSearchText"
+                          placeholder="搜索模型名称或ID"
+                          style="width: 300px; margin-bottom: 16px"
+                          @change="handleModelSearch"
+                          allowClear
+                        />
+                      </div>
+                      <div class="model-buttons">
+                        <a-button 
+                          type="primary" 
+                          @click="fetchModelPrices(currentProxy, group)"
+                          :loading="fetchingPrices"
+                        >
+                          自动获取价格
+                        </a-button>
+                      </div>
                     </div>
                     <a-table
                       :dataSource="getFilteredModels(group.models)"
@@ -109,6 +123,22 @@
                         </template>
                         <template v-else-if="column.key === 'remark'">
                           {{ record.remark || "" }}
+                        </template>
+                        <template v-else-if="column.key === 'inputPrice'">
+                          <span v-if="record.prices && record.prices.inputPrice !== undefined">
+                            {{ record.prices.inputPrice.toFixed(4) }} 美元/100M tokens
+                            <br>
+                            <small>{{ (record.prices.inputPrice * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/100M tokens</small>
+                          </span>
+                          <span v-else>-</span>
+                        </template>
+                        <template v-else-if="column.key === 'outputPrice'">
+                          <span v-if="record.prices && record.prices.outputPrice !== undefined">
+                            {{ record.prices.outputPrice.toFixed(4) }} 美元/100M tokens
+                            <br>
+                            <small>{{ (record.prices.outputPrice * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/100M tokens</small>
+                          </span>
+                          <span v-else>-</span>
                         </template>
                         <template v-else-if="column.key === 'action'">
                           <a-button
@@ -152,6 +182,9 @@
               }}</a-descriptions-item>
               <a-descriptions-item label="Base URL">{{
                 currentProxy.baseUrl
+              }}</a-descriptions-item>
+              <a-descriptions-item label="汇率">{{
+                currentProxy.exchangeRate ? `${currentProxy.exchangeRate} 人民币/美元` : '7.0 人民币/美元'
               }}</a-descriptions-item>
               <a-descriptions-item label="创建时间">{{
                 formatDate(currentProxy.createdAt)
@@ -257,6 +290,15 @@
             placeholder="请输入中转站Base URL"
           />
         </a-form-item>
+        <a-form-item label="汇率" name="exchangeRate" extra="人民币兑换1美元的汇率，默认为7.0">
+          <a-input-number
+            v-model:value="proxyForm.exchangeRate"
+            placeholder="请输入汇率"
+            :min="1"
+            :step="0.1"
+            style="width: 100%"
+          />
+        </a-form-item>
       </a-form>
       <template #footer>
         <a-button @click="proxyDialog.visible = false">取消</a-button>
@@ -337,6 +379,11 @@ export default {
         width: 200,
       },
       {
+        title: "汇率",
+        key: "exchangeRate",
+        width: 100,
+      },
+      {
         title: "分组数量",
         key: "groupCount",
         width: 100,
@@ -406,6 +453,16 @@ export default {
         ellipsis: true,
       },
       {
+        title: "输入价格",
+        key: "inputPrice",
+        width: 120,
+      },
+      {
+        title: "输出价格",
+        key: "outputPrice",
+        width: 120,
+      },
+      {
         title: "操作",
         key: "action",
         width: 350,
@@ -425,6 +482,7 @@ export default {
       id: null,
       name: "",
       baseUrl: "",
+      exchangeRate: 7.0,
     });
 
     const proxyRules = {
@@ -439,6 +497,11 @@ export default {
           message: "请输入有效的URL地址",
           trigger: "blur",
         },
+      ],
+      exchangeRate: [
+        { required: true, message: "请输入汇率", trigger: "blur" },
+        { type: "number", message: "汇率必须是数字", trigger: "blur" },
+        { type: "number", min: 1, message: "汇率必须大于1", trigger: "blur" },
       ],
     };
 
@@ -520,6 +583,7 @@ export default {
       proxyForm.id = null;
       proxyForm.name = "";
       proxyForm.baseUrl = "";
+      proxyForm.exchangeRate = 7.0;
       proxyDialog.isEdit = false;
       proxyDialog.visible = true;
     };
@@ -529,6 +593,7 @@ export default {
       proxyForm.id = proxy.id;
       proxyForm.name = proxy.name;
       proxyForm.baseUrl = proxy.baseUrl;
+      proxyForm.exchangeRate = proxy.exchangeRate || 7.0;
       proxyDialog.isEdit = true;
       proxyDialog.visible = true;
     };
@@ -546,6 +611,7 @@ export default {
             await apiClient.put(`/proxies/${proxyForm.id}`, {
               name: proxyForm.name,
               baseUrl: proxyForm.baseUrl,
+              exchangeRate: proxyForm.exchangeRate,
             });
             message.success("中转站更新成功");
           } else {
@@ -553,6 +619,7 @@ export default {
             await apiClient.post("/proxies", {
               name: proxyForm.name,
               baseUrl: proxyForm.baseUrl,
+              exchangeRate: proxyForm.exchangeRate,
             });
             message.success("中转站添加成功");
           }
@@ -839,6 +906,54 @@ export default {
         );
       });
     };
+    
+    // 价格获取状态
+    const fetchingPrices = ref(false);
+    
+    // 获取模型价格信息
+    const fetchModelPrices = async (proxy, group) => {
+      if (!proxy || !proxy.id) {
+        message.error("中转站信息不完整");
+        return;
+      }
+      
+      fetchingPrices.value = true;
+      
+      try {
+        const response = await apiClient.get(`/proxies/${proxy.id}/model-prices`);
+        
+        if (response.data && response.data.success && response.data.modelPrices) {
+          const modelPrices = response.data.modelPrices;
+          
+          // 找到当前分组的价格信息
+          const groupPrices = modelPrices[group.key];
+          
+          if (groupPrices) {
+            // 更新模型价格信息
+            if (group.models && group.models.length > 0) {
+              group.models.forEach(model => {
+                if (groupPrices[model.id]) {
+                  model.prices = groupPrices[model.id];
+                }
+              });
+              
+              message.success("模型价格获取成功");
+            } else {
+              message.warning("当前分组没有模型数据");
+            }
+          } else {
+            message.warning(`未找到分组 ${group.name} 的价格信息`);
+          }
+        } else {
+          message.error("获取模型价格失败: " + (response.data.error || "未知错误"));
+        }
+      } catch (error) {
+        console.error("获取模型价格失败:", error);
+        message.error("获取模型价格失败: " + (error.response?.data?.message || error.message || "未知错误"));
+      } finally {
+        fetchingPrices.value = false;
+      }
+    };
 
     onMounted(() => {
       fetchProxyList();
@@ -879,6 +994,8 @@ export default {
       modelSearchText,
       handleModelSearch,
       getFilteredModels,
+      fetchModelPrices,
+      fetchingPrices,
     };
   },
 };
@@ -889,6 +1006,18 @@ export default {
 .group-table,
 .model-table {
   margin-top: 20px;
+}
+
+.model-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.model-buttons {
+  display: flex;
+  gap: 8px;
 }
 .model-remark {
   display: flex;

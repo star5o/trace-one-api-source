@@ -4,13 +4,16 @@ class ProxyController {
   // 创建中转站
   static async create(req, res) {
     try {
-      const { name, baseUrl } = req.body;
+      const { name, baseUrl, exchangeRate } = req.body;
       
       if (!name || !baseUrl) {
         return res.status(400).json({ message: '名称和Base URL不能为空' });
       }
       
-      const proxy = await ProxyModel.create(name, baseUrl);
+      // 汇率默认为7.0，如果提供了则使用提供的值
+      const rate = exchangeRate ? parseFloat(exchangeRate) : 7.0;
+      
+      const proxy = await ProxyModel.create(name, baseUrl, rate);
       res.status(201).json(proxy);
     } catch (error) {
       console.error('创建中转站失败:', error);
@@ -22,13 +25,19 @@ class ProxyController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { name, baseUrl } = req.body;
+      const { name, baseUrl, exchangeRate } = req.body;
       
       if (!name || !baseUrl) {
         return res.status(400).json({ message: '名称和Base URL不能为空' });
       }
       
-      const proxy = await ProxyModel.update(id, name, baseUrl);
+      // 汇率必须是数字
+      const rate = exchangeRate !== undefined ? parseFloat(exchangeRate) : 7.0;
+      if (isNaN(rate)) {
+        return res.status(400).json({ message: '汇率必须是有效的数字' });
+      }
+      
+      const proxy = await ProxyModel.update(id, name, baseUrl, rate);
       res.json(proxy);
     } catch (error) {
       console.error('更新中转站失败:', error);

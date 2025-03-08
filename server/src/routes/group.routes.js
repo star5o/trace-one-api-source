@@ -24,4 +24,7 @@ router.post('/groups/:id/refresh-models', GroupController.refreshModels);
 // 自动获取分组
 router.post('/proxies/:proxyId/auto-fetch-groups', GroupController.autoFetchGroups);
 
+// 获取模型价格信息
+router.get('/proxies/:proxyId/model-prices', GroupController.fetchModelPrices);
+
 module.exports = router;

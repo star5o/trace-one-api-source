@@ -3,14 +3,14 @@ const { v4: uuidv4 } = require('uuid');
 
 class ProxyModel {
   // 创建中转站
-  static create(name, baseUrl) {
+  static create(name, baseUrl, exchangeRate = 7.0) {
     return new Promise((resolve, reject) => {
       const id = uuidv4();
       const now = Date.now();
       
       db.run(
-        'INSERT INTO proxies (id, name, baseUrl, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)',
-        [id, name, baseUrl, now, now],
+        'INSERT INTO proxies (id, name, baseUrl, exchangeRate, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, name, baseUrl, exchangeRate, now, now],
         function(err) {
           if (err) {
             reject(err);
@@ -19,6 +19,7 @@ class ProxyModel {
               id,
               name,
               baseUrl,
+              exchangeRate,
               createdAt: now,
               updatedAt: now
             });
@@ -29,13 +30,13 @@ class ProxyModel {
   }
 
   // 更新中转站
-  static update(id, name, baseUrl) {
+  static update(id, name, baseUrl, exchangeRate) {
     return new Promise((resolve, reject) => {
       const now = Date.now();
       
       db.run(
-        'UPDATE proxies SET name = ?, baseUrl = ?, updatedAt = ? WHERE id = ?',
-        [name, baseUrl, now, id],
+        'UPDATE proxies SET name = ?, baseUrl = ?, exchangeRate = ?, updatedAt = ? WHERE id = ?',
+        [name, baseUrl, exchangeRate, now, id],
         function(err) {
           if (err) {
             reject(err);
@@ -46,6 +47,7 @@ class ProxyModel {
               id,
               name,
               baseUrl,
+              exchangeRate,
               updatedAt: now
             });
           }
