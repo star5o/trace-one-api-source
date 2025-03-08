@@ -157,8 +157,8 @@ baseurl/api/pricing
   }
 }
 ```
-
-enable_groups 代表这个模型能在哪几个分组里面使用，usable_group 为分组列表
+data数组里：model_name 为模型名称，enable_groups 代表这个模型能在哪几个分组里面使用。
+usable_group 为分组列表。
 group_ratio 为每个分组的分组倍率，model_ratio 为模型倍率，completion_ratio 为补全倍率
 
 ②Rix-api 的
@@ -267,5 +267,5 @@ baseurl/api/models/price
     }
 }
 ```
-key为模型名称
-models 为模型列表，每个模型的 completion_ratio 代表补全倍率，group_price里每个分组的price 代表分组倍率 × 模型倍率的结果
+
+models 为模型列表，key 为模型名称，每个模型的 completion_ratio 代表补全倍率，group_price里每个分组的price 代表分组倍率 × 模型倍率的结果
