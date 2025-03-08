@@ -488,8 +488,16 @@ class GroupModel {
                       completionRatio
                     };
                     
-                    // 将模型保存到数据库
-                    await this.saveModelToDatabase(groups, groupKey, modelName, model);
+                    // 将模型和价格信息保存到数据库
+                    const modelWithPrices = {
+                      ...model,
+                      inputPrice,
+                      outputPrice,
+                      groupRatio,
+                      modelRatio,
+                      completionRatio
+                    };
+                    await this.saveModelToDatabase(groups, groupKey, modelName, modelWithPrices);
                   }
                 }
               }
@@ -540,11 +548,14 @@ class GroupModel {
                       completionRatio
                     };
                     
-                    // 将模型保存到数据库
+                    // 将模型和价格信息保存到数据库
                     const modelData = {
                       model_name: modelName,
                       model_ratio: modelRatio,
-                      completion_ratio: completionRatio
+                      completion_ratio: completionRatio,
+                      inputPrice,
+                      outputPrice,
+                      groupRatio
                     };
                     await this.saveModelToDatabase(groups, groupKey, modelName, modelData);
                   }
@@ -585,11 +596,13 @@ class GroupModel {
                       completionRatio
                     };
                     
-                    // 将模型保存到数据库
+                    // 将模型和价格信息保存到数据库
                     const modelData = {
                       model_name: modelName,
                       completion_ratio: completionRatio,
-                      combined_price: combinedPrice
+                      combined_price: combinedPrice,
+                      inputPrice,
+                      outputPrice
                     };
                     await this.saveModelToDatabase(groups, groupKey, modelName, modelData);
                   }
@@ -627,6 +640,23 @@ class GroupModel {
       const modelId = modelName;
       const rawData = JSON.stringify(modelData);
       
+      // 从modelData中提取相关信息
+      let created = null;
+      let object = null;
+      let owned_by = null;
+      
+      if (modelData.created) {
+        created = modelData.created;
+      }
+      
+      if (modelData.object) {
+        object = modelData.object;
+      }
+      
+      if (modelData.owned_by) {
+        owned_by = modelData.owned_by;
+      }
+      
       // 检查模型是否已存在
       const existingModel = await new Promise((resolve, reject) => {
         db.get('SELECT * FROM models WHERE groupId = ? AND id = ?', [group.id, modelId], (err, model) => {
@@ -639,8 +669,8 @@ class GroupModel {
         // 更新现有模型
         await new Promise((resolve, reject) => {
           db.run(
-            'UPDATE models SET name = ?, raw_data = ?, updatedAt = ? WHERE groupId = ? AND id = ?',
-            [modelName, rawData, now, group.id, modelId],
+            'UPDATE models SET created = ?, object = ?, owned_by = ?, raw_data = ?, updatedAt = ? WHERE groupId = ? AND id = ?',
+            [created, object, owned_by, rawData, now, group.id, modelId],
             function(err) {
               if (err) reject(err);
               else resolve();
@@ -651,8 +681,8 @@ class GroupModel {
         // 创建新模型
         await new Promise((resolve, reject) => {
           db.run(
-            'INSERT INTO models (id, groupId, name, raw_data, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
-            [modelId, group.id, modelName, rawData, now, now],
+            'INSERT INTO models (id, groupId, created, object, owned_by, raw_data, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [modelId, group.id, created, object, owned_by, rawData, now, now],
             function(err) {
               if (err) reject(err);
               else resolve();
