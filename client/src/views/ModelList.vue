@@ -21,22 +21,25 @@
             <template v-if="column.key === 'proxyName'">
               {{ record.proxyName }}
             </template>
+            <template v-else-if="column.key === 'groupName'">
+              {{ record.groupName }}
+            </template>
             <template v-else-if="column.key === 'baseUrl'">
               {{ record.baseUrl }}
             </template>
             <template v-else-if="column.key === 'inputPrice'">
-              <span v-if="record.prices && (record.prices.input_price !== undefined)">
-                {{ record.prices.input_price.toFixed(4) }} 美元/M tokens
+              <span v-if="record.calculatedPrices && (record.calculatedPrices.inputPrice !== undefined)">
+                {{ record.calculatedPrices.inputPrice.toFixed(4) }} 美元/M tokens
                 <br>
-                <small>{{ (record.prices.input_price * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
+                <small>{{ (record.calculatedPrices.inputPrice * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
               </span>
               <span v-else>-</span>
             </template>
             <template v-else-if="column.key === 'outputPrice'">
-              <span v-if="record.prices && (record.prices.output_price !== undefined)">
-                {{ record.prices.output_price.toFixed(4) }} 美元/M tokens
+              <span v-if="record.calculatedPrices && (record.calculatedPrices.outputPrice !== undefined)">
+                {{ record.calculatedPrices.outputPrice.toFixed(4) }} 美元/M tokens
                 <br>
-                <small>{{ (record.prices.output_price * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
+                <small>{{ (record.calculatedPrices.outputPrice * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
               </span>
               <span v-else>-</span>
             </template>
@@ -159,6 +162,11 @@ export default {
         width: 120,
       },
       {
+        title: "所属分组",
+        key: "groupName",
+        width: 120,
+      },
+      {
         title: "Base URL",
         key: "baseUrl",
         width: 200,
@@ -205,6 +213,9 @@ export default {
             for (const group of proxyDetail.groups) {
               if (group.models && group.models.length > 0) {
                 for (const model of group.models) {
+                  // 计算价格
+                  const calculatedPrices = calculateModelPrices(model, group);
+                  
                   // 添加中转站和分组信息到模型对象
                   allModelsList.push({
                     ...model,
@@ -213,7 +224,8 @@ export default {
                     baseUrl: proxy.baseUrl,
                     exchangeRate: proxy.exchangeRate || 7.0,
                     groupId: group.id,
-                    groupName: group.name
+                    groupName: group.name,
+                    calculatedPrices
                   });
                 }
               }
@@ -228,6 +240,61 @@ export default {
       } finally {
         loading.value = false;
       }
+    };
+    
+    // 计算模型价格
+    const calculateModelPrices = (model, group) => {
+      // 默认值
+      let groupRatio = 1;
+      let modelRatio = 1;
+      let completionRatio = 1;
+      
+      // 从分组获取分组倍率
+      if (group.price_data) {
+        try {
+          const groupPriceData = typeof group.price_data === 'string' 
+            ? JSON.parse(group.price_data) 
+            : group.price_data;
+          
+          if (groupPriceData && groupPriceData.group_ratio) {
+            groupRatio = parseFloat(groupPriceData.group_ratio);
+          }
+        } catch (e) {
+          console.error('解析分组价格数据失败:', e);
+        }
+      }
+      
+      // 从模型获取模型倍率和补全倍率
+      if (model.price_data) {
+        try {
+          const modelPriceData = typeof model.price_data === 'string' 
+            ? JSON.parse(model.price_data) 
+            : model.price_data;
+          
+          if (modelPriceData) {
+            if (modelPriceData.model_ratio) {
+              modelRatio = parseFloat(modelPriceData.model_ratio);
+            }
+            if (modelPriceData.completion_ratio) {
+              completionRatio = parseFloat(modelPriceData.completion_ratio);
+            }
+          }
+        } catch (e) {
+          console.error('解析模型价格数据失败:', e);
+        }
+      }
+      
+      // 计算输入和输出价格
+      const inputPrice = groupRatio * modelRatio * 2;
+      const outputPrice = inputPrice * completionRatio;
+      
+      return {
+        groupRatio,
+        modelRatio,
+        completionRatio,
+        inputPrice,
+        outputPrice
+      };
     };
     
     // 根据搜索文本过滤模型
