@@ -113,7 +113,25 @@ class ProxyModel {
                       if (model.price_data) {
                         try {
                           const priceData = JSON.parse(model.price_data);
-                          model.prices = priceData;
+                          
+                          // 计算输入和输出价格
+                          if (priceData.group_ratio !== undefined && priceData.model_ratio !== undefined && priceData.completion_ratio !== undefined) {
+                            const inputPrice = priceData.group_ratio * priceData.model_ratio * 2;
+                            const outputPrice = inputPrice * priceData.completion_ratio;
+                            
+                            // 保存价格信息到模型对象
+                            model.prices = {
+                              ...priceData,
+                              inputPrice,
+                              outputPrice
+                            };
+                            
+                            // 为了兼容性，同时保存下划线格式的字段名
+                            model.input_price = inputPrice;
+                            model.output_price = outputPrice;
+                          } else {
+                            model.prices = priceData;
+                          }
                         } catch (e) {
                           console.error('解析价格数据失败:', e);
                         }
@@ -177,7 +195,25 @@ class ProxyModel {
                         if (model.price_data) {
                           try {
                             const priceData = JSON.parse(model.price_data);
-                            model.prices = priceData;
+                            
+                            // 计算输入和输出价格
+                            if (priceData.group_ratio !== undefined && priceData.model_ratio !== undefined && priceData.completion_ratio !== undefined) {
+                              const inputPrice = priceData.group_ratio * priceData.model_ratio * 2;
+                              const outputPrice = inputPrice * priceData.completion_ratio;
+                              
+                              // 保存价格信息到模型对象
+                              model.prices = {
+                                ...priceData,
+                                inputPrice,
+                                outputPrice
+                              };
+                              
+                              // 为了兼容性，同时保存下划线格式的字段名
+                              model.input_price = inputPrice;
+                              model.output_price = outputPrice;
+                            } else {
+                              model.prices = priceData;
+                            }
                           } catch (e) {
                             console.error('解析价格数据失败:', e);
                           }

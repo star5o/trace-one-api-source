@@ -659,6 +659,25 @@ class GroupModel {
         owned_by = modelData.owned_by;
       }
       
+      // 提取价格计算所需的基础数据
+      const priceData = {};
+      
+      // 只保存计算价格所需的基础数据，不保存计算结果
+      if (modelData.group_ratio !== undefined) {
+        priceData.group_ratio = modelData.group_ratio;
+      }
+      
+      if (modelData.model_ratio !== undefined) {
+        priceData.model_ratio = modelData.model_ratio;
+      }
+      
+      if (modelData.completion_ratio !== undefined) {
+        priceData.completion_ratio = modelData.completion_ratio;
+      }
+      
+      // 序列化价格数据
+      const priceDataJson = JSON.stringify(priceData);
+      
       // 检查模型是否已存在
       const existingModel = await new Promise((resolve, reject) => {
         db.get('SELECT * FROM models WHERE groupId = ? AND id = ?', [group.id, modelId], (err, model) => {
@@ -671,8 +690,8 @@ class GroupModel {
         // 更新现有模型
         await new Promise((resolve, reject) => {
           db.run(
-            'UPDATE models SET created = ?, object = ?, owned_by = ?, raw_data = ?, updatedAt = ? WHERE groupId = ? AND id = ?',
-            [created, object, owned_by, rawData, now, group.id, modelId],
+            'UPDATE models SET created = ?, object = ?, owned_by = ?, raw_data = ?, price_data = ?, updatedAt = ? WHERE groupId = ? AND id = ?',
+            [created, object, owned_by, rawData, priceDataJson, now, group.id, modelId],
             function(err) {
               if (err) reject(err);
               else resolve();
@@ -683,8 +702,8 @@ class GroupModel {
         // 创建新模型
         await new Promise((resolve, reject) => {
           db.run(
-            'INSERT INTO models (id, groupId, created, object, owned_by, raw_data, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [modelId, group.id, created, object, owned_by, rawData, now, now],
+            'INSERT INTO models (id, groupId, created, object, owned_by, raw_data, price_data, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [modelId, group.id, created, object, owned_by, rawData, priceDataJson, now, now],
             function(err) {
               if (err) reject(err);
               else resolve();

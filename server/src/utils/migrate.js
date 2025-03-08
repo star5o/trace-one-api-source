@@ -236,6 +236,7 @@ const migrateDatabase = async () => {
       
       // 迁移models表
       await addColumnIfNotExists('models', 'remark', 'TEXT');
+      await addColumnIfNotExists('models', 'price_data', 'TEXT');
       
       // 迁移proxies表
       await addColumnIfNotExists('proxies', 'exchangeRate', 'REAL DEFAULT 7.0');
