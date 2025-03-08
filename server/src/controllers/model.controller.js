@@ -100,6 +100,47 @@ class ModelController {
       res.status(500).json({ message: '更新模型价格参数失败', error: error.message });
     }
   }
+  
+  // 更新模型逆向状态
+  static async updateReverseStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { is_reverse } = req.body;
+      
+      // 验证参数
+      if (is_reverse === undefined) {
+        return res.status(400).json({ message: '缺少必要的参数' });
+      }
+      
+      const isReverseValue = is_reverse ? 1 : 0;
+      const now = Date.now();
+      
+      // 更新模型逆向状态
+      db.run(
+        'UPDATE models SET is_reverse = ?, updatedAt = ? WHERE id = ?',
+        [isReverseValue, now, id],
+        function(err) {
+          if (err) {
+            console.error('更新模型逆向状态失败:', err);
+            return res.status(500).json({ message: '更新模型逆向状态失败', error: err.message });
+          }
+          
+          if (this.changes === 0) {
+            return res.status(404).json({ message: '模型不存在' });
+          }
+          
+          res.json({ 
+            id, 
+            is_reverse: !!is_reverse,
+            updatedAt: now 
+          });
+        }
+      );
+    } catch (error) {
+      console.error('更新模型逆向状态失败:', error);
+      res.status(500).json({ message: '更新模型逆向状态失败', error: error.message });
+    }
+  }
 }
 
 module.exports = ModelController;

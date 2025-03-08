@@ -120,6 +120,15 @@
                         <template v-if="column.key === 'created'">
                           {{ formatDate(record.created * 1000) }}
                         </template>
+                        <template v-else-if="column.key === 'isReverse'">
+                          <a-switch
+                            :checked="!!record.is_reverse"
+                            @change="(checked) => updateReverseStatus(currentProxy, group, record, checked)"
+                            size="small"
+                            :checkedChildren="'是'"
+                            :unCheckedChildren="'否'"
+                          />
+                        </template>
                         <template v-else-if="column.key === 'remark'">
                           {{ record.remark || "" }}
                         </template>
@@ -512,6 +521,11 @@ export default {
         title: "创建时间",
         key: "created",
         width: 150,
+      },
+      {
+        title: "是否逆向",
+        key: "isReverse",
+        width: 100,
       },
       {
         title: "备注",
@@ -1156,6 +1170,23 @@ export default {
     // 价格获取状态
     const fetchingPrices = ref(false);
     
+    // 更新模型逆向状态
+    const updateReverseStatus = async (proxy, group, model, isReverse) => {
+      try {
+        await apiClient.put(`/models/${model.id}/reverse-status`, {
+          is_reverse: isReverse
+        });
+        
+        // 更新前端模型对象
+        model.is_reverse = isReverse;
+        
+        message.success(`模型 ${model.id} 的逆向状态已更新为 ${isReverse ? '是' : '否'}`);
+      } catch (error) {
+        console.error('更新模型逆向状态失败:', error);
+        message.error('更新模型逆向状态失败');
+      }
+    };
+    
     // 获取所有模型价格信息
     const fetchAllModelPrices = async (proxy) => {
       if (!proxy || !proxy.id) {
@@ -1296,6 +1327,7 @@ export default {
       fetchAllModelPrices,
       fetchModelPrices,
       fetchingPrices,
+      updateReverseStatus,
       // 价格参数相关
       priceParamsFormRef,
       priceParamsDialog,

@@ -43,6 +43,15 @@
               </span>
               <span v-else>-</span>
             </template>
+            <template v-else-if="column.key === 'isReverse'">
+              <a-switch
+                :checked="!!record.is_reverse"
+                @change="(checked) => updateReverseStatus(record, checked)"
+                size="small"
+                :checkedChildren="'是'"
+                :unCheckedChildren="'否'"
+              />
+            </template>
             <template v-else-if="column.key === 'action'">
               <a-button
                 size="small"
@@ -186,6 +195,11 @@ export default {
           return aPrice - bPrice;
         },
         defaultSortOrder: 'ascend',
+      },
+      {
+        title: "是否逆向",
+        key: "isReverse",
+        width: 100,
       },
       {
         title: "备注",
@@ -333,6 +347,23 @@ export default {
           groupName: model.groupName,
         },
       });
+    };
+    
+    // 更新模型逆向状态
+    const updateReverseStatus = async (model, isReverse) => {
+      try {
+        await apiClient.put(`/models/${model.id}/reverse-status`, {
+          is_reverse: isReverse
+        });
+        
+        // 更新前端模型对象
+        model.is_reverse = isReverse;
+        
+        message.success(`模型 ${model.id} 的逆向状态已更新为 ${isReverse ? '是' : '否'}`);
+      } catch (error) {
+        console.error('更新模型逆向状态失败:', error);
+        message.error('更新模型逆向状态失败');
+      }
     };
     
     // 查看溯源记录
@@ -519,6 +550,7 @@ export default {
       sendToTrace,
       viewModelDetail,
       editModelRemark,
+      updateReverseStatus,
       // 价格参数相关
       priceParamsFormRef,
       priceParamsDialog,

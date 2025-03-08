@@ -36,6 +36,23 @@ const addColumnIfNotExists = async (tableName, columnName, columnType) => {
   });
 };
 
+// 迁移 models 表结构
+const migrateModelsTable = async () => {
+  try {
+    // 添加 is_reverse 列
+    await addColumnIfNotExists('models', 'is_reverse', 'INTEGER DEFAULT 0');
+    
+    // 添加 price_data 列
+    await addColumnIfNotExists('models', 'price_data', 'TEXT');
+    
+    console.log('models 表迁移完成');
+    return true;
+  } catch (error) {
+    console.error('models 表迁移失败:', error);
+    return false;
+  }
+};
+
 // 迁移traces表结构
 const migrateTracesTable = async () => {
   return new Promise((resolve, reject) => {
@@ -235,8 +252,7 @@ const migrateDatabase = async () => {
       await addColumnIfNotExists('groups', 'remark', 'TEXT');
       
       // 迁移models表
-      await addColumnIfNotExists('models', 'remark', 'TEXT');
-      await addColumnIfNotExists('models', 'price_data', 'TEXT');
+      await migrateModelsTable();
       
       // 迁移proxies表
       await addColumnIfNotExists('proxies', 'exchangeRate', 'REAL DEFAULT 7.0');
