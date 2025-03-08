@@ -426,133 +426,157 @@ class GroupModel {
       let success = false;
       
       try {
-        // 尝试 /api/pricing 路径
-        const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
-          timeout: 5000
-        });
+        // 尝试不同的API路径获取模型价格信息
+        let apiResponses = [];
         
-        // 处理 new-api 格式
-        if (pricingResponse.data && Array.isArray(pricingResponse.data.data) && pricingResponse.data.group_ratio) {
-          const models = pricingResponse.data.data;
-          const groupRatios = pricingResponse.data.group_ratio;
-          
-          // 处理每个模型
-          for (const model of models) {
-            if (model.model_name && model.model_ratio && model.completion_ratio && model.enable_groups) {
-              const modelName = model.model_name;
-              const modelRatio = model.model_ratio;
-              const completionRatio = model.completion_ratio;
-              
-              // 为每个分组计算价格
-              for (const groupKey of model.enable_groups) {
-                if (groupRatios[groupKey]) {
-                  const groupRatio = groupRatios[groupKey];
-                  
-                  // 计算价格
-                  const inputPrice = groupRatio * modelRatio * 2;
-                  const outputPrice = inputPrice * completionRatio;
-                  
-                  if (!modelPrices[groupKey]) {
-                    modelPrices[groupKey] = {};
-                  }
-                  
-                  modelPrices[groupKey][modelName] = {
-                    inputPrice,
-                    outputPrice,
-                    modelRatio,
-                    groupRatio,
-                    completionRatio
-                  };
-                }
-              }
-            }
-          }
-          
-          success = Object.keys(modelPrices).length > 0;
+        // 尝试 /api/pricing 路径
+        try {
+          const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
+            timeout: 5000
+          });
+          apiResponses.push(pricingResponse);
+        } catch (error) {
+          console.log('尝试 /api/pricing 路径失败:', error.message);
         }
-        // 处理 Rix-api 格式
-        else if (pricingResponse.data && pricingResponse.data.data && pricingResponse.data.data.model_group && pricingResponse.data.data.model_completion_ratio) {
-          const modelGroups = pricingResponse.data.data.model_group;
-          const modelCompletionRatios = pricingResponse.data.data.model_completion_ratio;
-          const groupSpecial = pricingResponse.data.data.group_special || {};
-          
-          // 处理每个分组
-          for (const [groupKey, groupInfo] of Object.entries(modelGroups)) {
-            if (groupInfo.GroupRatio && groupInfo.ModelPrice) {
-              const groupRatio = groupInfo.GroupRatio;
-              
-              // 处理分组中的每个模型
-              for (const [modelName, modelInfo] of Object.entries(groupInfo.ModelPrice)) {
-                if (modelInfo.price !== undefined) {
-                  const modelRatio = modelInfo.price;
-                  // 获取补全倍率，如果没有则默认为1
-                  const completionRatio = modelCompletionRatios[modelName] || 1;
-                  
-                  // 检查模型是否在当前分组的特殊列表中
-                  const isSpecialModel = groupSpecial[modelName] && groupSpecial[modelName].includes(groupKey);
-                  
-                  // 如果模型不在特殊列表中且特殊列表存在，则跳过
-                  if (groupSpecial[modelName] && !isSpecialModel) {
-                    continue;
-                  }
-                  
-                  // 计算价格
-                  const inputPrice = groupRatio * modelRatio * 2;
-                  const outputPrice = inputPrice * completionRatio;
-                  
-                  if (!modelPrices[groupKey]) {
-                    modelPrices[groupKey] = {};
-                  }
-                  
-                  modelPrices[groupKey][modelName] = {
-                    inputPrice,
-                    outputPrice,
-                    modelRatio,
-                    groupRatio,
-                    completionRatio
-                  };
-                }
-              }
-            }
-          }
-          
-          success = Object.keys(modelPrices).length > 0;
+        
+        // 尝试 /api/models/price 路径
+        try {
+          const modelsPriceResponse = await axios.get(`${proxy.baseUrl}/api/models/price`, {
+            timeout: 5000
+          });
+          apiResponses.push(modelsPriceResponse);
+        } catch (error) {
+          console.log('尝试 /api/models/price 路径失败:', error.message);
         }
-        // 处理 VoAPI 格式
-        else if (pricingResponse.data && pricingResponse.data.data && pricingResponse.data.data.models) {
-          const models = pricingResponse.data.data.models;
-          
-          for (const model of models) {
-            if (model.key && model.group_price && model.completion_ratio) {
-              const modelName = model.key;
-              const completionRatio = model.completion_ratio;
-              
-              // 处理每个分组的价格
-              for (const [groupKey, priceInfo] of Object.entries(model.group_price)) {
-                if (priceInfo.price !== undefined) {
-                  // 在VoAPI中，price已经是分组倍率 × 模型倍率的结果
-                  const combinedPrice = priceInfo.price;
-                  
-                  // 计算价格
-                  const inputPrice = combinedPrice * 2;
-                  const outputPrice = inputPrice * completionRatio;
-                  
-                  if (!modelPrices[groupKey]) {
-                    modelPrices[groupKey] = {};
+        
+        // 处理所有响应
+        for (const response of apiResponses) {
+          // 处理 new-api 格式
+          if (response.data && Array.isArray(response.data.data) && response.data.group_ratio) {
+            const models = response.data.data;
+            const groupRatios = response.data.group_ratio;
+            
+            // 处理每个模型
+            for (const model of models) {
+              if (model.model_name && model.model_ratio && model.completion_ratio && model.enable_groups) {
+                const modelName = model.model_name;
+                const modelRatio = model.model_ratio;
+                const completionRatio = model.completion_ratio;
+                
+                // 为每个分组计算价格
+                for (const groupKey of model.enable_groups) {
+                  if (groupRatios[groupKey]) {
+                    const groupRatio = groupRatios[groupKey];
+                    
+                    // 计算价格
+                    const inputPrice = groupRatio * modelRatio * 2;
+                    const outputPrice = inputPrice * completionRatio;
+                    
+                    if (!modelPrices[groupKey]) {
+                      modelPrices[groupKey] = {};
+                    }
+                    
+                    modelPrices[groupKey][modelName] = {
+                      inputPrice,
+                      outputPrice,
+                      modelRatio,
+                      groupRatio,
+                      completionRatio
+                    };
                   }
-                  
-                  modelPrices[groupKey][modelName] = {
-                    inputPrice,
-                    outputPrice,
-                    combinedPrice,
-                    completionRatio
-                  };
                 }
               }
             }
+            
+            success = Object.keys(modelPrices).length > 0;
+            if (success) break; // 如果成功解析到数据，就不处理后续响应
           }
-          
-          success = Object.keys(modelPrices).length > 0;
+          // 处理 Rix-api 格式
+          else if (response.data && response.data.data && response.data.data.model_group && response.data.data.model_completion_ratio) {
+            const modelGroups = response.data.data.model_group;
+            const modelCompletionRatios = response.data.data.model_completion_ratio;
+            const groupSpecial = response.data.data.group_special || {};
+            
+            // 处理每个分组
+            for (const [groupKey, groupInfo] of Object.entries(modelGroups)) {
+              if (groupInfo.GroupRatio && groupInfo.ModelPrice) {
+                const groupRatio = groupInfo.GroupRatio;
+                
+                // 处理分组中的每个模型
+                for (const [modelName, modelInfo] of Object.entries(groupInfo.ModelPrice)) {
+                  if (modelInfo.price !== undefined) {
+                    const modelRatio = modelInfo.price;
+                    // 获取补全倍率，如果没有则默认为1
+                    const completionRatio = modelCompletionRatios[modelName] || 1;
+                    
+                    // 检查模型是否在当前分组的特殊列表中
+                    const isSpecialModel = groupSpecial[modelName] && groupSpecial[modelName].includes(groupKey);
+                    
+                    // 如果模型不在特殊列表中且特殊列表存在，则跳过
+                    if (groupSpecial[modelName] && !isSpecialModel) {
+                      continue;
+                    }
+                    
+                    // 计算价格
+                    const inputPrice = groupRatio * modelRatio * 2;
+                    const outputPrice = inputPrice * completionRatio;
+                    
+                    if (!modelPrices[groupKey]) {
+                      modelPrices[groupKey] = {};
+                    }
+                    
+                    modelPrices[groupKey][modelName] = {
+                      inputPrice,
+                      outputPrice,
+                      modelRatio,
+                      groupRatio,
+                      completionRatio
+                    };
+                  }
+                }
+              }
+            }
+            
+            success = Object.keys(modelPrices).length > 0;
+            if (success) break; // 如果成功解析到数据，就不处理后续响应
+          }
+          // 处理 VoAPI 格式
+          else if (response.data && response.data.data && response.data.data.models) {
+            const models = response.data.data.models;
+            
+            for (const model of models) {
+              if (model.key && model.group_price && model.completion_ratio) {
+                const modelName = model.key;
+                const completionRatio = model.completion_ratio;
+                
+                // 处理每个分组的价格
+                for (const [groupKey, priceInfo] of Object.entries(model.group_price)) {
+                  if (priceInfo.price !== undefined) {
+                    // 在VoAPI中，price已经是分组倍率 × 模型倍率的结果
+                    const combinedPrice = priceInfo.price;
+                    
+                    // 计算价格
+                    const inputPrice = combinedPrice * 2;
+                    const outputPrice = inputPrice * completionRatio;
+                    
+                    if (!modelPrices[groupKey]) {
+                      modelPrices[groupKey] = {};
+                    }
+                    
+                    modelPrices[groupKey][modelName] = {
+                      inputPrice,
+                      outputPrice,
+                      combinedPrice,
+                      completionRatio
+                    };
+                  }
+                }
+              }
+            }
+            
+            success = Object.keys(modelPrices).length > 0;
+            if (success) break; // 如果成功解析到数据，就不处理后续响应
+          }
         }
       } catch (error) {
         console.log('尝试获取模型价格失败:', error.message);
