@@ -54,7 +54,7 @@ class ModelController {
       const dataQuery = `
         SELECT 
           m.id, m.groupId, m.remark, m.raw_data, m.createdAt, m.updatedAt,
-          g.id as group_id, g.name as group_name, g.proxyId,
+          g.id as group_id, g.name as group_name, g.key as group_key, g.proxyId,
           p.id as proxy_id, p.name as proxy_name, p.baseUrl, p.exchangeRate
         FROM models m
         JOIN groups g ON m.groupId = g.id
@@ -80,15 +80,56 @@ class ModelController {
             return res.status(500).json({ message: '查询模型列表失败', error: err.message });
           }
           
-          // 处理数据，使用默认价格
+          // 处理数据，从 raw_data 中提取价格参数
           const processedModels = models.map(model => {
-            // 对于每个模型，我们使用默认价格设置
-            // 在实际应用中，可能需要从其他表中获取价格信息
-            const groupRatio = 1;
-            const modelRatio = 1;
-            const completionRatio = 1;
+            // 默认价格参数
+            let groupRatio = 1;
+            let modelRatio = 1;
+            let completionRatio = 1;
             
-            // 计算默认价格
+            // 尝试从 raw_data 中提取模型价格信息
+            try {
+              // 先获取模型的原始数据
+              if (model.raw_data) {
+                const rawData = typeof model.raw_data === 'string' 
+                  ? JSON.parse(model.raw_data) 
+                  : model.raw_data;
+                
+                // 检查是否有定价信息
+                if (rawData && rawData.pricing) {
+                  // 如果有定价信息，使用定价信息中的倍率
+                  if (rawData.pricing.model_ratio) {
+                    modelRatio = parseFloat(rawData.pricing.model_ratio);
+                  }
+                  
+                  if (rawData.pricing.completion_ratio) {
+                    completionRatio = parseFloat(rawData.pricing.completion_ratio);
+                  }
+                }
+              }
+              
+              // 如果没有找到价格信息，使用默认值
+              // 根据模型类型设置默认倍率
+              if (model.id.includes('gpt-4')) {
+                if (modelRatio === 1) modelRatio = 15; // GPT-4 系列默认倍率
+              } else if (model.id.includes('gpt-3.5')) {
+                if (modelRatio === 1) modelRatio = 1.5; // GPT-3.5 系列默认倍率
+              }
+              
+              // 补全倍率默认值
+              if (completionRatio === 1) {
+                if (model.id.includes('gpt-4')) {
+                  completionRatio = 2;
+                } else {
+                  completionRatio = 1.5;
+                }
+              }
+              
+            } catch (e) {
+              console.error('解析模型 raw_data 失败:', e);
+            }
+            
+            // 计算价格
             const inputPrice = groupRatio * modelRatio * 2;
             const outputPrice = inputPrice * completionRatio;
             
@@ -112,6 +153,9 @@ class ModelController {
               updatedAt: model.updatedAt
             };
           });
+          
+          // 打印调试信息
+          console.log('处理后的模型数据示例:', processedModels[0] || {});
           
           // 返回结果
           res.json({

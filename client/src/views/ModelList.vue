@@ -215,14 +215,44 @@ export default {
         width: 200,
       },
       {
+        title: "分组倍率",
+        key: "groupRatio",
+        width: 100,
+        customRender: ({ record }) => {
+          return record.prices?.group_ratio ? record.prices.group_ratio.toFixed(2) : '1.00';
+        },
+      },
+      {
+        title: "模型倍率",
+        key: "modelRatio",
+        width: 100,
+        customRender: ({ record }) => {
+          return record.prices?.model_ratio ? record.prices.model_ratio.toFixed(2) : '1.00';
+        },
+      },
+      {
+        title: "补全倍率",
+        key: "completionRatio",
+        width: 100,
+        customRender: ({ record }) => {
+          return record.prices?.completion_ratio ? record.prices.completion_ratio.toFixed(2) : '1.00';
+        },
+      },
+      {
         title: "输入价格",
         key: "inputPrice",
-        width: 150,
+        width: 100,
+        customRender: ({ record }) => {
+          return `$${record.prices?.input_price ? record.prices.input_price.toFixed(6) : '0.000000'}`;
+        },
       },
       {
         title: "输出价格",
         key: "outputPrice",
-        width: 150,
+        width: 100,
+        customRender: ({ record }) => {
+          return `$${record.prices?.output_price ? record.prices.output_price.toFixed(6) : '0.000000'}`;
+        },
       },
       {
         title: "备注",
@@ -302,17 +332,8 @@ export default {
         
         const { data, total, page } = response.data;
         
-        // 更新数据和分页信息
-        models.value = data.map(model => {
-          // 处理价格显示
-          return {
-            ...model,
-            calculatedPrices: {
-              inputPrice: model.prices?.input_price || 0,
-              outputPrice: model.prices?.output_price || 0
-            }
-          };
-        });
+        // 直接使用后端返回的数据
+        models.value = data;
         
         pagination.total = total || 0;
         pagination.current = page || 1;
