@@ -491,11 +491,11 @@ class GroupModel {
                     // 将模型和价格信息保存到数据库
                     const modelWithPrices = {
                       ...model,
-                      inputPrice,
-                      outputPrice,
-                      groupRatio,
-                      modelRatio,
-                      completionRatio
+                      input_price: inputPrice,
+                      output_price: outputPrice,
+                      group_ratio: groupRatio,
+                      model_ratio: modelRatio,
+                      completion_ratio: completionRatio
                     };
                     await this.saveModelToDatabase(groups, groupKey, modelName, modelWithPrices);
                   }
@@ -553,9 +553,9 @@ class GroupModel {
                       model_name: modelName,
                       model_ratio: modelRatio,
                       completion_ratio: completionRatio,
-                      inputPrice,
-                      outputPrice,
-                      groupRatio
+                      input_price: inputPrice,
+                      output_price: outputPrice,
+                      group_ratio: groupRatio
                     };
                     await this.saveModelToDatabase(groups, groupKey, modelName, modelData);
                   }
@@ -597,12 +597,14 @@ class GroupModel {
                     };
                     
                     // 将模型和价格信息保存到数据库
+                    // 对于VoAPI格式，模型倍率默认为1，分组倍率为combinedPrice
                     const modelData = {
                       model_name: modelName,
+                      model_ratio: 1, // 默认设置为1
                       completion_ratio: completionRatio,
-                      combined_price: combinedPrice,
-                      inputPrice,
-                      outputPrice
+                      group_ratio: combinedPrice, // 将组合价格作为分组倍率
+                      input_price: inputPrice,
+                      output_price: outputPrice
                     };
                     await this.saveModelToDatabase(groups, groupKey, modelName, modelData);
                   }

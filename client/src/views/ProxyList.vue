@@ -124,18 +124,18 @@
                           {{ record.remark || "" }}
                         </template>
                         <template v-else-if="column.key === 'inputPrice'">
-                          <span v-if="record.prices && record.prices.inputPrice !== undefined">
-                            {{ record.prices.inputPrice.toFixed(4) }} 美元/100M tokens
+                          <span v-if="record.prices && (record.prices.inputPrice !== undefined || record.prices.input_price !== undefined)">
+                            {{ (record.prices.input_price || record.prices.inputPrice).toFixed(4) }} 美元/M tokens
                             <br>
-                            <small>{{ (record.prices.inputPrice * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/100M tokens</small>
+                            <small>{{ ((record.prices.input_price || record.prices.inputPrice) * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
                           </span>
                           <span v-else>-</span>
                         </template>
                         <template v-else-if="column.key === 'outputPrice'">
-                          <span v-if="record.prices && record.prices.outputPrice !== undefined">
-                            {{ record.prices.outputPrice.toFixed(4) }} 美元/100M tokens
+                          <span v-if="record.prices && (record.prices.outputPrice !== undefined || record.prices.output_price !== undefined)">
+                            {{ (record.prices.output_price || record.prices.outputPrice).toFixed(4) }} 美元/M tokens
                             <br>
-                            <small>{{ (record.prices.outputPrice * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/100M tokens</small>
+                            <small>{{ ((record.prices.output_price || record.prices.outputPrice) * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
                           </span>
                           <span v-else>-</span>
                         </template>
