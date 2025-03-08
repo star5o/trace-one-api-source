@@ -46,6 +46,10 @@
                 <template #icon><monitor-outlined /></template>
                 <span>中转站列表</span>
               </a-menu-item>
+              <a-menu-item key="/models" @click="() => $router.push('/models')">
+                <template #icon><appstore-outlined /></template>
+                <span>模型列表</span>
+              </a-menu-item>
               <a-menu-item key="/trace" @click="() => $router.push('/trace')">
                 <template #icon><link-outlined /></template>
                 <span>中转溯源</span>
@@ -90,7 +94,7 @@
 import { computed, onMounted, ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { checkAuth, logout, getCurrentUser, changePassword } from './store/auth';
-import { DownOutlined, MonitorOutlined, LinkOutlined, KeyOutlined, LogoutOutlined } from '@ant-design/icons-vue';
+import { DownOutlined, MonitorOutlined, LinkOutlined, KeyOutlined, LogoutOutlined, AppstoreOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 
 export default {
@@ -100,7 +104,8 @@ export default {
     MonitorOutlined,
     LinkOutlined,
     KeyOutlined,
-    LogoutOutlined
+    LogoutOutlined,
+    AppstoreOutlined
   },
   setup() {
     const router = useRouter();
