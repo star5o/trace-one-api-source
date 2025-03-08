@@ -320,14 +320,6 @@
       width="500px"
       @ok="submitGroupForm"
     >
-    
-    <!-- 编辑模型价格参数对话框 -->
-    <a-modal
-      v-model:open="priceParamsDialog.visible"
-      title="编辑价格参数"
-      width="500px"
-      @ok="submitPriceParamsForm"
-    >
       <a-form
         ref="groupFormRef"
         :model="groupForm"
