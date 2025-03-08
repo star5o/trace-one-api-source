@@ -2,46 +2,20 @@
   <div class="model-list-container">
     <a-card title="模型列表" :bordered="false">
       <template #extra>
-        <div class="search-container">
-          <a-input-search
-            v-model:value="searchText"
-            placeholder="搜索模型"
-            style="width: 200px; margin-right: 10px"
-            @search="handleSearch"
-          />
-          <a-select
-            v-model:value="proxyFilter"
-            placeholder="选择中转站"
-            style="width: 150px; margin-right: 10px"
-            allowClear
-            @change="handleProxyChange"
-          >
-            <a-select-option v-for="proxy in proxies" :key="proxy.id" :value="proxy.id">
-              {{ proxy.name }}
-            </a-select-option>
-          </a-select>
-          <a-select
-            v-model:value="groupFilter"
-            placeholder="选择分组"
-            style="width: 150px"
-            allowClear
-            @change="handleGroupChange"
-            :disabled="!proxyFilter"
-          >
-            <a-select-option v-for="group in filteredGroups" :key="group.id" :value="group.id">
-              {{ group.name }}
-            </a-select-option>
-          </a-select>
-        </div>
+        <a-input-search
+          v-model:value="searchText"
+          placeholder="搜索模型"
+          style="width: 200px"
+          @search="handleSearch"
+        />
       </template>
       
       <a-spin :spinning="loading">
         <a-table
           :columns="columns"
-          :data-source="models"
-          :pagination="pagination"
+          :data-source="filteredModels"
+          :pagination="{ pageSize: 10 }"
           :row-key="record => record.id"
-          @change="handleTableChange"
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'proxyName'">
@@ -164,32 +138,15 @@ import { useRouter } from "vue-router";
 import { message, Modal } from "ant-design-vue";
 import { apiClient } from "../utils/api";
 
-// 用于调试
-console.log('API客户端配置:', apiClient.defaults.baseURL);
-
 export default {
   name: "ModelList",
   setup() {
     const router = useRouter();
     
     // 表格数据和加载状态
-    const models = ref([]);
+    const allModels = ref([]);
     const loading = ref(true);
     const searchText = ref("");
-    const proxyFilter = ref(null);
-    const groupFilter = ref(null);
-    const proxies = ref([]);
-    const groups = ref([]);
-    
-    // 分页配置
-    const pagination = reactive({
-      current: 1,
-      pageSize: 20,
-      total: 0,
-      showSizeChanger: true,
-      pageSizeOptions: ['10', '20', '50', '100'],
-      showTotal: (total) => `共 ${total} 条数据`
-    });
     
     // 表格列定义
     const columns = [
@@ -215,44 +172,14 @@ export default {
         width: 200,
       },
       {
-        title: "分组倍率",
-        key: "groupRatio",
-        width: 100,
-        customRender: ({ record }) => {
-          return record.prices?.group_ratio ? record.prices.group_ratio.toFixed(2) : '1.00';
-        },
-      },
-      {
-        title: "模型倍率",
-        key: "modelRatio",
-        width: 100,
-        customRender: ({ record }) => {
-          return record.prices?.model_ratio ? record.prices.model_ratio.toFixed(2) : '1.00';
-        },
-      },
-      {
-        title: "补全倍率",
-        key: "completionRatio",
-        width: 100,
-        customRender: ({ record }) => {
-          return record.prices?.completion_ratio ? record.prices.completion_ratio.toFixed(2) : '1.00';
-        },
-      },
-      {
         title: "输入价格",
         key: "inputPrice",
-        width: 100,
-        customRender: ({ record }) => {
-          return `$${record.prices?.input_price ? record.prices.input_price.toFixed(6) : '0.000000'}`;
-        },
+        width: 150,
       },
       {
         title: "输出价格",
         key: "outputPrice",
-        width: 100,
-        customRender: ({ record }) => {
-          return `$${record.prices?.output_price ? record.prices.output_price.toFixed(6) : '0.000000'}`;
-        },
+        width: 150,
       },
       {
         title: "备注",
@@ -267,124 +194,128 @@ export default {
       },
     ];
     
-    // 获取中转站列表
-    const fetchProxies = async () => {
-      try {
-        const response = await apiClient.get('/proxies');
-        proxies.value = response.data;
-      } catch (error) {
-        console.error('获取中转站列表失败:', error);
-        message.error('获取中转站列表失败');
-      }
-    };
-    
-    // 获取指定中转站的分组
-    const fetchGroups = async (proxyId) => {
-      if (!proxyId) {
-        groups.value = [];
-        return;
-      }
-      
-      try {
-        const response = await apiClient.get(`/proxies/${proxyId}`);
-        if (response.data && response.data.groups) {
-          groups.value = response.data.groups;
-        } else {
-          groups.value = [];
-        }
-      } catch (error) {
-        console.error('获取分组列表失败:', error);
-        message.error('获取分组列表失败');
-        groups.value = [];
-      }
-    };
-    
-    // 获取模型数据，使用后端分页和筛选
-    const fetchModels = async () => {
+    // 获取所有模型数据
+    const fetchAllModels = async () => {
       loading.value = true;
       try {
-        // 准备查询参数
-        const params = {
-          page: pagination.current,
-          pageSize: pagination.pageSize
-        };
+        // 先获取所有中转站
+        const proxyResponse = await apiClient.get('/proxies');
+        const proxies = proxyResponse.data;
         
-        // 添加搜索条件
-        if (searchText.value) {
-          params.search = searchText.value;
+        const allModelsList = [];
+        
+        // 遍历所有中转站，获取其下的所有模型
+        for (const proxy of proxies) {
+          const proxyDetailResponse = await apiClient.get(`/proxies/${proxy.id}`);
+          const proxyDetail = proxyDetailResponse.data;
+          
+          if (proxyDetail.groups && proxyDetail.groups.length > 0) {
+            for (const group of proxyDetail.groups) {
+              if (group.models && group.models.length > 0) {
+                for (const model of group.models) {
+                  // 计算价格
+                  const calculatedPrices = calculateModelPrices(model, group);
+                  
+                  // 添加中转站和分组信息到模型对象
+                  allModelsList.push({
+                    ...model,
+                    proxyId: proxy.id,
+                    proxyName: proxy.name,
+                    baseUrl: proxy.baseUrl,
+                    exchangeRate: proxy.exchangeRate || 7.0,
+                    groupId: group.id,
+                    groupName: group.name,
+                    calculatedPrices
+                  });
+                }
+              }
+            }
+          }
         }
         
-        // 添加中转站和分组筛选
-        if (proxyFilter.value) {
-          params.proxyId = proxyFilter.value;
-        }
-        
-        if (groupFilter.value) {
-          params.groupId = groupFilter.value;
-        }
-        
-        // 调试信息
-        console.log('发送请求到:', apiClient.defaults.baseURL + '/models', params);
-        
-        // 调用后端API
-        const response = await apiClient.get('/models', { params });
-        console.log('收到响应:', response.data);
-        
-        const { data, total, page } = response.data;
-        
-        // 直接使用后端返回的数据
-        models.value = data;
-        
-        pagination.total = total || 0;
-        pagination.current = page || 1;
+        allModels.value = allModelsList;
       } catch (error) {
         console.error('获取模型列表失败:', error);
-        console.error('错误详情:', error.response?.data || error.message);
-        message.error(`获取模型列表失败: ${error.response?.data?.message || error.message}`);
-        // 设置空数组以避免页面报错
-        models.value = [];
+        message.error('获取模型列表失败');
       } finally {
         loading.value = false;
       }
     };
     
-    // 过滤分组列表
-    const filteredGroups = computed(() => {
-      if (!proxyFilter.value) {
-        return [];
+    // 计算模型价格
+    const calculateModelPrices = (model, group) => {
+      // 默认值
+      let groupRatio = 1;
+      let modelRatio = 1;
+      let completionRatio = 1;
+      
+      // 从分组获取分组倍率
+      if (group.price_data) {
+        try {
+          const groupPriceData = typeof group.price_data === 'string' 
+            ? JSON.parse(group.price_data) 
+            : group.price_data;
+          
+          if (groupPriceData && groupPriceData.group_ratio) {
+            groupRatio = parseFloat(groupPriceData.group_ratio);
+          }
+        } catch (e) {
+          console.error('解析分组价格数据失败:', e);
+        }
       }
-      return groups.value;
+      
+      // 从模型获取模型倍率和补全倍率
+      if (model.price_data) {
+        try {
+          const modelPriceData = typeof model.price_data === 'string' 
+            ? JSON.parse(model.price_data) 
+            : model.price_data;
+          
+          if (modelPriceData) {
+            if (modelPriceData.model_ratio) {
+              modelRatio = parseFloat(modelPriceData.model_ratio);
+            }
+            if (modelPriceData.completion_ratio) {
+              completionRatio = parseFloat(modelPriceData.completion_ratio);
+            }
+          }
+        } catch (e) {
+          console.error('解析模型价格数据失败:', e);
+        }
+      }
+      
+      // 计算输入和输出价格
+      const inputPrice = groupRatio * modelRatio * 2;
+      const outputPrice = inputPrice * completionRatio;
+      
+      return {
+        groupRatio,
+        modelRatio,
+        completionRatio,
+        inputPrice,
+        outputPrice
+      };
+    };
+    
+    // 根据搜索文本过滤模型
+    const filteredModels = computed(() => {
+      if (!searchText.value) {
+        return allModels.value;
+      }
+      
+      const search = searchText.value.toLowerCase();
+      return allModels.value.filter(model => {
+        return (
+          (model.id && model.id.toLowerCase().includes(search)) ||
+          (model.proxyName && model.proxyName.toLowerCase().includes(search)) ||
+          (model.remark && model.remark.toLowerCase().includes(search))
+        );
+      });
     });
     
     // 处理搜索
     const handleSearch = () => {
-      pagination.current = 1; // 重置到第一页
-      fetchModels();
-    };
-    
-    // 处理中转站选择变化
-    const handleProxyChange = (value) => {
-      groupFilter.value = null; // 重置分组选择
-      if (value) {
-        fetchGroups(value);
-      } else {
-        groups.value = [];
-      }
-      pagination.current = 1; // 重置到第一页
-      fetchModels();
-    };
-    
-    // 处理分组选择变化
-    const handleGroupChange = () => {
-      pagination.current = 1; // 重置到第一页
-      fetchModels();
-    };
-    
-    // 处理表格分页和排序变化
-    const handleTableChange = (pag) => {
-      pagination.current = pag.current;
-      pagination.pageSize = pag.pageSize;
-      fetchModels();
+      // 搜索文本改变时自动触发过滤，不需要额外操作
     };
     
     // 发送到溯源
@@ -569,26 +500,16 @@ export default {
     };
     
     onMounted(() => {
-      // 初始化加载数据
-      fetchProxies();
-      fetchModels();
+      fetchAllModels();
     });
     
     return {
-      models,
+      allModels,
+      filteredModels,
       loading,
       columns,
       searchText,
-      proxies,
-      groups,
-      filteredGroups,
-      proxyFilter,
-      groupFilter,
-      pagination,
       handleSearch,
-      handleProxyChange,
-      handleGroupChange,
-      handleTableChange,
       sendToTrace,
       viewModelDetail,
       editModelRemark,
