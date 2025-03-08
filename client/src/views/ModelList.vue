@@ -180,6 +180,12 @@ export default {
         title: "输出价格",
         key: "outputPrice",
         width: 150,
+        sorter: (a, b) => {
+          const aPrice = a.calculatedPrices?.outputPrice || 0;
+          const bPrice = b.calculatedPrices?.outputPrice || 0;
+          return aPrice - bPrice;
+        },
+        defaultSortOrder: 'ascend',
       },
       {
         title: "备注",
