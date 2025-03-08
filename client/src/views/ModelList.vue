@@ -164,6 +164,9 @@ import { useRouter } from "vue-router";
 import { message, Modal } from "ant-design-vue";
 import { apiClient } from "../utils/api";
 
+// 用于调试
+console.log('API客户端配置:', apiClient.defaults.baseURL);
+
 export default {
   name: "ModelList",
   setup() {
@@ -290,8 +293,13 @@ export default {
           params.groupId = groupFilter.value;
         }
         
+        // 调试信息
+        console.log('发送请求到:', apiClient.defaults.baseURL + '/models', params);
+        
         // 调用后端API
         const response = await apiClient.get('/models', { params });
+        console.log('收到响应:', response.data);
+        
         const { data, total, page } = response.data;
         
         // 更新数据和分页信息
@@ -300,17 +308,20 @@ export default {
           return {
             ...model,
             calculatedPrices: {
-              inputPrice: model.prices.input_price,
-              outputPrice: model.prices.output_price
+              inputPrice: model.prices?.input_price || 0,
+              outputPrice: model.prices?.output_price || 0
             }
           };
         });
         
-        pagination.total = total;
-        pagination.current = page;
+        pagination.total = total || 0;
+        pagination.current = page || 1;
       } catch (error) {
         console.error('获取模型列表失败:', error);
-        message.error('获取模型列表失败');
+        console.error('错误详情:', error.response?.data || error.message);
+        message.error(`获取模型列表失败: ${error.response?.data?.message || error.message}`);
+        // 设置空数组以避免页面报错
+        models.value = [];
       } finally {
         loading.value = false;
       }
@@ -537,16 +548,26 @@ export default {
     };
     
     onMounted(() => {
-      fetchAllModels();
+      // 初始化加载数据
+      fetchProxies();
+      fetchModels();
     });
     
     return {
-      allModels,
-      filteredModels,
+      models,
       loading,
       columns,
       searchText,
+      proxies,
+      groups,
+      filteredGroups,
+      proxyFilter,
+      groupFilter,
+      pagination,
       handleSearch,
+      handleProxyChange,
+      handleGroupChange,
+      handleTableChange,
       sendToTrace,
       viewModelDetail,
       editModelRemark,
