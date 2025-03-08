@@ -294,8 +294,8 @@
           <a-input-number
             v-model:value="proxyForm.exchangeRate"
             placeholder="请输入汇率"
-            :min="1"
-            :step="0.1"
+            :min="0.1"
+            :step="0.01"
             style="width: 100%"
           />
         </a-form-item>
