@@ -421,6 +421,9 @@ class GroupModel {
         });
       });
       
+      // 获取该中转站的所有分组
+      const groups = await this.getByProxyId(proxyId);
+      
       // 尝试不同的API路径获取模型价格信息
       let modelPrices = {};
       let success = false;
@@ -455,6 +458,7 @@ class GroupModel {
           if (response.data && Array.isArray(response.data.data) && response.data.group_ratio) {
             const models = response.data.data;
             const groupRatios = response.data.group_ratio;
+            const usableGroups = response.data.usable_group || {};
             
             // 处理每个模型
             for (const model of models) {
@@ -483,6 +487,9 @@ class GroupModel {
                       groupRatio,
                       completionRatio
                     };
+                    
+                    // 将模型保存到数据库
+                    await this.saveModelToDatabase(groups, groupKey, modelName, model);
                   }
                 }
               }
@@ -532,6 +539,14 @@ class GroupModel {
                       groupRatio,
                       completionRatio
                     };
+                    
+                    // 将模型保存到数据库
+                    const modelData = {
+                      model_name: modelName,
+                      model_ratio: modelRatio,
+                      completion_ratio: completionRatio
+                    };
+                    await this.saveModelToDatabase(groups, groupKey, modelName, modelData);
                   }
                 }
               }
@@ -569,6 +584,14 @@ class GroupModel {
                       combinedPrice,
                       completionRatio
                     };
+                    
+                    // 将模型保存到数据库
+                    const modelData = {
+                      model_name: modelName,
+                      completion_ratio: completionRatio,
+                      combined_price: combinedPrice
+                    };
+                    await this.saveModelToDatabase(groups, groupKey, modelName, modelData);
                   }
                 }
               }
@@ -590,6 +613,56 @@ class GroupModel {
     } catch (error) {
       console.error('获取模型价格失败:', error);
       return { success: false, error: error.message };
+    }
+  }
+  
+  // 将模型保存到数据库
+  static async saveModelToDatabase(groups, groupKey, modelName, modelData) {
+    try {
+      // 查找对应的分组
+      const group = groups.find(g => g.key === groupKey);
+      if (!group) return; // 如果找不到分组，直接返回
+      
+      const now = Date.now();
+      const modelId = modelName;
+      const rawData = JSON.stringify(modelData);
+      
+      // 检查模型是否已存在
+      const existingModel = await new Promise((resolve, reject) => {
+        db.get('SELECT * FROM models WHERE groupId = ? AND id = ?', [group.id, modelId], (err, model) => {
+          if (err) reject(err);
+          else resolve(model);
+        });
+      });
+      
+      if (existingModel) {
+        // 更新现有模型
+        await new Promise((resolve, reject) => {
+          db.run(
+            'UPDATE models SET name = ?, raw_data = ?, updatedAt = ? WHERE groupId = ? AND id = ?',
+            [modelName, rawData, now, group.id, modelId],
+            function(err) {
+              if (err) reject(err);
+              else resolve();
+            }
+          );
+        });
+      } else {
+        // 创建新模型
+        await new Promise((resolve, reject) => {
+          db.run(
+            'INSERT INTO models (id, groupId, name, raw_data, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+            [modelId, group.id, modelName, rawData, now, now],
+            function(err) {
+              if (err) reject(err);
+              else resolve();
+            }
+          );
+        });
+      }
+    } catch (error) {
+      console.error('保存模型到数据库失败:', error);
+      // 这里我们不抛出错误，因为我们不希望因为保存模型失败而中断整个价格获取过程
     }
   }
 }
