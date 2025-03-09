@@ -115,92 +115,49 @@ class ModelController {
       const isReverseValue = is_reverse ? 1 : 0;
       const now = Date.now();
       
-      // 检查模型是否存在
-      db.get('SELECT * FROM models WHERE id = ?', [id], (err, model) => {
-        if (err) {
-          console.error('查询模型失败:', err);
-          return res.status(500).json({ message: '查询模型失败', error: err.message });
-        }
-        
-        if (!model) {
-          return res.status(404).json({ message: '模型不存在' });
-        }
-        
-        // 如果提供了中转站ID和分组ID，则创建或更新特定的逆向记录
-        if (proxy_id && group_id) {
-          // 检查是否已存在记录
-          db.get(
-            'SELECT * FROM model_reverse_status WHERE model_id = ? AND proxy_id = ? AND group_id = ?',
-            [id, proxy_id, group_id],
-            (err, record) => {
-              if (err) {
-                console.error('查询逆向状态记录失败:', err);
-                return res.status(500).json({ message: '查询逆向状态记录失败', error: err.message });
-              }
-              
-              if (record) {
-                // 更新现有记录
-                db.run(
-                  'UPDATE model_reverse_status SET is_reverse = ?, updated_at = ? WHERE model_id = ? AND proxy_id = ? AND group_id = ?',
-                  [isReverseValue, now, id, proxy_id, group_id],
-                  function(err) {
-                    if (err) {
-                      console.error('更新逆向状态记录失败:', err);
-                      return res.status(500).json({ message: '更新逆向状态记录失败', error: err.message });
-                    }
-                    
-                    res.json({ 
-                      id, 
-                      proxy_id,
-                      group_id,
-                      is_reverse: !!is_reverse,
-                      updatedAt: now 
-                    });
-                  }
-                );
-              } else {
-                // 创建新记录
-                db.run(
-                  'INSERT INTO model_reverse_status (model_id, proxy_id, group_id, is_reverse, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-                  [id, proxy_id, group_id, isReverseValue, now, now],
-                  function(err) {
-                    if (err) {
-                      console.error('创建逆向状态记录失败:', err);
-                      return res.status(500).json({ message: '创建逆向状态记录失败', error: err.message });
-                    }
-                    
-                    res.json({ 
-                      id, 
-                      proxy_id,
-                      group_id,
-                      is_reverse: !!is_reverse,
-                      updatedAt: now 
-                    });
-                  }
-                );
-              }
+      // 如果提供了分组ID，则更新特定分组中的模型
+      if (group_id) {
+        db.run(
+          'UPDATE models SET is_reverse = ?, updatedAt = ? WHERE id = ? AND groupId = ?',
+          [isReverseValue, now, id, group_id],
+          function(err) {
+            if (err) {
+              console.error('更新模型逆向状态失败:', err);
+              return res.status(500).json({ message: '更新模型逆向状态失败', error: err.message });
             }
-          );
-        } else {
-          // 兼容旧版本，直接更新模型的逆向状态
-          db.run(
-            'UPDATE models SET is_reverse = ?, updatedAt = ? WHERE id = ?',
-            [isReverseValue, now, id],
-            function(err) {
-              if (err) {
-                console.error('更新模型逆向状态失败:', err);
-                return res.status(500).json({ message: '更新模型逆向状态失败', error: err.message });
-              }
-              
-              res.json({ 
-                id, 
-                is_reverse: !!is_reverse,
-                updatedAt: now 
-              });
+            
+            if (this.changes === 0) {
+              return res.status(404).json({ message: '未找到指定的模型或分组' });
             }
-          );
-        }
-      });
+            
+            res.json({ 
+              id, 
+              group_id,
+              proxy_id,
+              is_reverse: !!is_reverse,
+              updatedAt: now 
+            });
+          }
+        );
+      } else {
+        // 如果没有提供分组ID，则更新所有分组中的该模型
+        db.run(
+          'UPDATE models SET is_reverse = ?, updatedAt = ? WHERE id = ?',
+          [isReverseValue, now, id],
+          function(err) {
+            if (err) {
+              console.error('更新模型逆向状态失败:', err);
+              return res.status(500).json({ message: '更新模型逆向状态失败', error: err.message });
+            }
+            
+            res.json({ 
+              id, 
+              is_reverse: !!is_reverse,
+              updatedAt: now 
+            });
+          }
+        );
+      }
     } catch (error) {
       console.error('更新模型逆向状态失败:', error);
       res.status(500).json({ message: '更新模型逆向状态失败', error: error.message });

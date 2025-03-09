@@ -242,47 +242,7 @@ const rebuildTracesTable = async (oldTraces) => {
   });
 };
 
-// 创建 model_reverse_status 表
-const createModelReverseStatusTable = async () => {
-  return new Promise((resolve, reject) => {
-    // 检查表是否存在
-    db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='model_reverse_status'", (err, table) => {
-      if (err) {
-        console.error('检查model_reverse_status表是否存在失败:', err);
-        return reject(err);
-      }
-      
-      if (!table) {
-        console.log('创建model_reverse_status表...');
-        
-        // 创建表
-        db.run(`
-          CREATE TABLE model_reverse_status (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            model_id TEXT NOT NULL,
-            proxy_id TEXT NOT NULL,
-            group_id TEXT NOT NULL,
-            is_reverse INTEGER DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            UNIQUE(model_id, proxy_id, group_id)
-          )
-        `, (err) => {
-          if (err) {
-            console.error('创建model_reverse_status表失败:', err);
-            return reject(err);
-          }
-          
-          console.log('model_reverse_status表创建成功');
-          resolve(true);
-        });
-      } else {
-        console.log('model_reverse_status表已存在');
-        resolve(false);
-      }
-    });
-  });
-};
+
 
 // 迁移数据库
 const migrateDatabase = async () => {
@@ -301,9 +261,6 @@ const migrateDatabase = async () => {
       
       // 迁移traces表
       await migrateTracesTable();
-      
-      // 创建model_reverse_status表
-      await createModelReverseStatusTable();
       
       console.log('数据库迁移全部完成');
       resolve();
