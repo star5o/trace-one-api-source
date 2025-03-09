@@ -14,7 +14,12 @@ const routes = [
     component: () => import('../views/ProxyList.vue'),
     meta: { title: '中转站列表', requiresAuth: true }
   },
-
+  {
+    path: '/models',
+    name: 'ModelList',
+    component: () => import('../views/ModelList.vue'),
+    meta: { title: '模型列表', requiresAuth: true }
+  },
   {
     path: '/trace',
     name: 'ProxyTrace',

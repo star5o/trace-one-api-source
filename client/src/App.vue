@@ -46,6 +46,11 @@
                 <template #icon><monitor-outlined /></template>
                 <span>中转站列表</span>
               </a-menu-item>
+              
+              <a-menu-item key="/models" @click="() => $router.push('/models')">
+                <template #icon><appstore-outlined /></template>
+                <span>模型列表</span>
+              </a-menu-item>
 
               <a-menu-item key="/trace" @click="() => $router.push('/trace')">
                 <template #icon><link-outlined /></template>
