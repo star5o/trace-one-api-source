@@ -281,6 +281,17 @@ export default {
         return [];
       }
     };
+    
+    // 获取单个中转站的详细信息
+    const fetchProxyDetail = async (proxyId) => {
+      try {
+        const response = await axios.get(`/api/proxies/${proxyId}`);
+        return response.data;
+      } catch (error) {
+        console.error(`获取中转站 ${proxyId} 详情失败:`, error);
+        return null;
+      }
+    };
 
     // 获取所有模型
     const fetchAllModels = async () => {
@@ -350,8 +361,10 @@ export default {
     // 更新模型的逆向状态
     const updateReverseStatus = async (proxyId, groupId, model, isReverse) => {
       try {
-        await axios.put(`/api/models/${groupId}/${model.id}/reverse`, {
-          isReverse
+        await axios.put(`/api/models/${model.id}/reverse-status`, {
+          proxy_id: proxyId,
+          group_id: groupId,
+          is_reverse: isReverse
         });
         
         // 更新本地数据
@@ -384,15 +397,15 @@ export default {
     // 保存模型备注
     const saveModelRemark = async () => {
       try {
-        const { groupId, modelId, remark } = modelRemarkDialog.form;
+        const { modelId, remark } = modelRemarkDialog.form;
         
-        await axios.put(`/api/models/${groupId}/${modelId}/remark`, {
+        await axios.put(`/api/models/${modelId}`, {
           remark
         });
         
         // 更新本地数据
         const modelIndex = allModels.value.findIndex(
-          m => m.id === modelId && m.groupId === groupId
+          m => m.id === modelId
         );
         
         if (modelIndex !== -1) {
@@ -436,18 +449,20 @@ export default {
     // 保存模型价格参数
     const saveModelPriceParams = async () => {
       try {
-        const { groupId, modelId, groupRatio, modelRatio, completionRatio } = modelPriceDialog.form;
+        const { proxyId, groupId, modelId, groupRatio, modelRatio, completionRatio } = modelPriceDialog.form;
         
         if (!groupRatio || !modelRatio || !completionRatio) {
           message.error("请填写所有价格参数");
           return;
         }
         
-        await axios.put(`/api/models/${groupId}/${modelId}/price`, {
-          groupRatio,
-          modelRatio,
-          completionRatio
-        });
+        const priceData = {
+          group_ratio: groupRatio,
+          model_ratio: modelRatio,
+          completion_ratio: completionRatio
+        };
+        
+        await axios.put(`/api/models/${modelId}/price-params`, priceData);
         
         // 更新本地数据
         const modelIndex = allModels.value.findIndex(
@@ -459,49 +474,77 @@ export default {
           const inputPrice = groupRatio * modelRatio * 2;
           const outputPrice = inputPrice * completionRatio;
           
-          allModels.value[modelIndex].prices = {
-            group_ratio: groupRatio,
-            model_ratio: modelRatio,
-            completion_ratio: completionRatio,
-            inputPrice,
-            outputPrice
-          };
+          if (!allModels.value[modelIndex].prices) {
+            allModels.value[modelIndex].prices = {};
+          }
           
-          // 为了兼容性，同时更新下划线格式的字段
-          allModels.value[modelIndex].input_price = inputPrice;
-          allModels.value[modelIndex].output_price = outputPrice;
+          // 更新价格参数
+          allModels.value[modelIndex].prices.group_ratio = groupRatio;
+          allModels.value[modelIndex].prices.model_ratio = modelRatio;
+          allModels.value[modelIndex].prices.completion_ratio = completionRatio;
+          
+          // 更新计算结果
+          allModels.value[modelIndex].prices.input_price = inputPrice;
+          allModels.value[modelIndex].prices.output_price = outputPrice;
         }
         
         message.success("更新价格参数成功");
         modelPriceDialog.visible = false;
       } catch (error) {
         console.error("更新价格参数失败:", error);
-        message.error("更新价格参数失败");
+        message.error("更新价格参数失败: " + (error.response?.data?.message || error.message || "未知错误"));
       }
     };
 
     // 发送到溯源
     const sendToTrace = (model) => {
+      // 从 proxies 中找到对应的中转站和分组
+      const proxy = proxies.value.find(p => p.id === model.proxyId);
+      if (!proxy) {
+        message.error("找不到对应的中转站信息");
+        return;
+      }
+      
+      // 查找分组信息
+      let groupName = model.groupName;
+      let groupKey = "";
+      
+      if (proxy.groups) {
+        const group = proxy.groups.find(g => g.id === model.groupId);
+        if (group) {
+          groupKey = group.key;
+        }
+      }
+      
       router.push({
-        name: "ProxyTrace",
+        path: "/trace",
         query: {
-          proxyId: model.proxyId,
-          groupId: model.groupId,
-          modelId: model.id
+          baseUrl: proxy.baseUrl,
+          key: groupKey,
+          model: model.id,
+          groupName: groupName
         }
       });
     };
 
     // 查看模型详情
     const viewModelDetail = (proxyId, groupId, modelId) => {
-      router.push({
-        name: "ModelDetail",
-        params: {
-          proxyId,
-          groupId,
-          modelId
+      // 找到当前代理和分组
+      const proxy = proxies.value.find(p => p.id === proxyId);
+      if (proxy) {
+        const group = proxy.groups?.find(g => g.id === groupId);
+        if (group) {
+          router.push({
+            path: `/model-detail/${proxyId}/${groupId}/${modelId}`,
+            query: {
+              groupName: group.name
+            }
+          });
+          return;
         }
-      });
+      }
+      // 如果找不到分组信息，使用原来的方式
+      router.push(`/model-detail/${proxyId}/${groupId}/${modelId}`);
     };
 
     onMounted(() => {
