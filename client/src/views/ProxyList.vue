@@ -1179,9 +1179,15 @@ export default {
     
     // 确认删除所有分组和模型
     const confirmDeleteAllGroupsAndModels = () => {
+      // 确保 currentProxy 已经被正确设置
+      if (!currentProxy || !currentProxy.id) {
+        message.error('请先选择一个中转站');
+        return;
+      }
+      
       Modal.confirm({
         title: '确认删除',
-        content: `您确定要删除中转站 ${currentProxy.name} 的所有分组和模型吗？此操作不可恢复。`,
+        content: `您确定要删除中转站 ${currentProxy.name || currentProxy.id} 的所有分组和模型吗？此操作不可恢复。`,
         okText: '确认删除',
         okType: 'danger',
         cancelText: '取消',
