@@ -95,12 +95,12 @@ class ProxyModel {
             // 为每个分组获取模型
             for (const group of groups) {
               group.models = await new Promise((resolve, reject) => {
-                db.all('SELECT * FROM models WHERE groupId = ?', [group.id], (err, models) => {
+                db.all('SELECT * FROM models WHERE groupId = ?', [group.id], async (err, models) => {
                   if (err) {
                     reject(err);
                   } else {
                     // 解析原始数据
-                    models.forEach(model => {
+                    for (const model of models) {
                       if (model.raw_data) {
                         try {
                           model.raw_data = JSON.parse(model.raw_data);
@@ -136,7 +136,32 @@ class ProxyModel {
                           console.error('解析价格数据失败:', e);
                         }
                       }
-                    });
+                      
+                      // 获取特定于中转站+分组+模型组合的逆向状态
+                      try {
+                        const reverseStatus = await new Promise((resolve, reject) => {
+                          db.get(
+                            'SELECT * FROM model_reverse_status WHERE model_id = ? AND proxy_id = ? AND group_id = ?',
+                            [model.id, id, group.id],
+                            (err, status) => {
+                              if (err) {
+                                console.error('获取模型逆向状态失败:', err);
+                                resolve(null);
+                              } else {
+                                resolve(status);
+                              }
+                            }
+                          );
+                        });
+                        
+                        // 如果存在特定的逆向状态记录，使用它的值
+                        if (reverseStatus) {
+                          model.is_reverse = !!reverseStatus.is_reverse;
+                        }
+                      } catch (e) {
+                        console.error('获取模型逆向状态失败:', e);
+                      }
+                    }
                     resolve(models);
                   }
                 });

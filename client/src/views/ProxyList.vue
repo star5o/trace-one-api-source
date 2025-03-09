@@ -1165,13 +1165,15 @@ export default {
     const updateReverseStatus = async (proxy, group, model, isReverse) => {
       try {
         await apiClient.put(`/models/${model.id}/reverse-status`, {
+          proxy_id: proxy.id,
+          group_id: group.id,
           is_reverse: isReverse
         });
         
         // 更新前端模型对象
         model.is_reverse = isReverse;
         
-        message.success(`模型 ${model.id} 的逆向状态已更新为 ${isReverse ? '是' : '否'}`);
+        message.success(`中转站 ${proxy.name} 的分组 ${group.name} 中的模型 ${model.id} 的逆向状态已更新为 ${isReverse ? '是' : '否'}`);
       } catch (error) {
         console.error('更新模型逆向状态失败:', error);
         message.error('更新模型逆向状态失败');
