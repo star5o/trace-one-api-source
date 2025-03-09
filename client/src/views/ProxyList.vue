@@ -222,6 +222,13 @@
                 style="margin-left: 8px"
                 >一键获取分组、模型和价格</a-button
               >
+              <a-button 
+                type="primary" 
+                danger
+                @click="confirmDeleteAllGroupsAndModels" 
+                style="margin-left: 8px"
+                >一键删除分组和模型</a-button
+              >
             </div>
 
             <div
@@ -1170,6 +1177,39 @@ export default {
     // 价格获取状态
     const fetchingPrices = ref(false);
     
+    // 确认删除所有分组和模型
+    const confirmDeleteAllGroupsAndModels = () => {
+      Modal.confirm({
+        title: '确认删除',
+        content: `您确定要删除中转站 ${currentProxy.name} 的所有分组和模型吗？此操作不可恢复。`,
+        okText: '确认删除',
+        okType: 'danger',
+        cancelText: '取消',
+        onOk: () => deleteAllGroupsAndModels()
+      });
+    };
+    
+    // 删除所有分组和模型
+    const deleteAllGroupsAndModels = async () => {
+      try {
+        loading.value = true;
+        const response = await apiClient.delete(`/proxies/${currentProxy.id}/groups-and-models`);
+        
+        if (response.data.success) {
+          message.success(response.data.message || '删除成功');
+          // 刷新分组列表
+          await fetchGroups();
+        } else {
+          message.error(response.data.message || '删除失败');
+        }
+      } catch (error) {
+        console.error('删除分组和模型失败:', error);
+        message.error('删除分组和模型失败');
+      } finally {
+        loading.value = false;
+      }
+    };
+    
     // 更新模型逆向状态
     const updateReverseStatus = async (proxy, group, model, isReverse) => {
       try {
@@ -1328,6 +1368,7 @@ export default {
       fetchModelPrices,
       fetchingPrices,
       updateReverseStatus,
+      confirmDeleteAllGroupsAndModels,
       // 价格参数相关
       priceParamsFormRef,
       priceParamsDialog,

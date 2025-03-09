@@ -269,3 +269,52 @@ baseurl/api/models/price
 ```
 
 models 为模型列表，key 为模型名称，每个模型的 completion_ratio 代表补全倍率，group_price里每个分组的price 代表分组倍率 × 模型倍率的结果
+
+④shell-api
+baseurl/api/pricing
+```json
+{
+    "data": {
+        "CompletionRatio":{
+
+            "deepseek-ai/deepseek-r1": 4,
+            "deepseek-r1": 4,
+            "deepseek-r1-2025-01-20": 4,
+            "deepseek-reasoner": 4,
+            "gemini-1.5-flash": 4,
+            "gemini-1.5-flash-8b": 4,
+            ...
+        },
+        "GroupRatio": {
+            "claude": 2,
+            "deepseek_pro": 0.4,
+            "default": 0.6,
+            "dev": 0.01,
+            "gemini": 0.5,
+            "openai": 2,
+            "svip": 5,
+            "vip": 0.8,
+            "vip_100": 1,
+            "限时特价": 0.1,
+            "限时特价-无审核": 0.2
+        },
+        "ModelFixedPrice": Object{...},
+        "ModelRatio": Object{...},
+        "Models": [
+
+            "claude-3-5-haiku-20241022",
+            "claude-3-5-sonnet-20240620",
+            "claude-3-5-sonnet-20241022",
+            "claude-3-haiku-20240307",
+            "claude-3-sonnet-20240229",
+            "gpt-4-turbo-2024-04-09",
+            "gpt-4o",
+            ...
+        ]
+    },
+    "message": "",
+    "success": true
+}
+
+```
+CompletionRatio 为各个模型的补全倍率，GroupRatio 为各个分组的分组倍率，ModelRatio 为模型倍率，Models为模型列表

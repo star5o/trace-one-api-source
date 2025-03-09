@@ -27,4 +27,7 @@ router.post('/proxies/:proxyId/auto-fetch-groups', GroupController.autoFetchGrou
 // 获取模型价格信息
 router.get('/proxies/:proxyId/model-prices', GroupController.fetchModelPrices);
 
+// 删除中转站的所有分组和模型
+router.delete('/proxies/:proxyId/groups-and-models', GroupController.deleteAllGroupsAndModels);
+
 module.exports = router;
