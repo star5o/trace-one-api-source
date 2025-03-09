@@ -40,7 +40,7 @@
               <a-button 
                 size="small"
                 type="primary"
-                @click="fetchGroupsAndPrices" 
+                @click="fetchGroupsAndPricesForProxy(record)" 
                 style="margin-left: 8px"
                 >一键获取分组、模型和价格</a-button
               >
@@ -977,6 +977,41 @@ export default {
       }
     };
     
+    // 为操作列中的按钮提供的方法，接收代理记录作为参数
+    const fetchGroupsAndPricesForProxy = async (proxy) => {
+      try {
+        message.info("正在一键获取分组、模型和价格，请稍候...");
+        fetchingPrices.value = true;
+        
+        // 第一步：获取分组
+        const response = await apiClient.post(`/proxies/${proxy.id}/auto-fetch-groups`);
+        
+        let groupsAdded = 0;
+        if (response.data && response.data.success) {
+          groupsAdded = response.data.count || 0;
+        }
+        
+        // 第二步：获取所有模型价格（包含模型列表）
+        const priceResponse = await apiClient.get(`/proxies/${proxy.id}/model-prices`);
+        
+        // 更新中转站列表
+        await fetchProxyList();
+        
+        // 如果当前正在查看该代理的详情，更新详情信息
+        if (currentProxy.value && currentProxy.value.id === proxy.id) {
+          const detailResponse = await apiClient.get(`/proxies/${proxy.id}`);
+          currentProxy.value = detailResponse.data;
+        }
+        
+        message.success(`一键获取成功！新增 ${groupsAdded} 个分组，并获取了模型和价格信息`);
+      } catch (error) {
+        console.error("一键获取分组、模型和价格失败:", error);
+        message.error("一键获取分组、模型和价格失败");
+      } finally {
+        fetchingPrices.value = false;
+      }
+    };
+
     // 自动获取分组 (保留兼容性)
     const autoFetchGroups = fetchGroupsAndPrices;
 
@@ -1356,6 +1391,7 @@ export default {
       confirmDeleteGroup,
       refreshModels,
       fetchGroupsAndPrices,
+      fetchGroupsAndPricesForProxy,
       autoFetchGroups,
       sendToTrace,
       viewModelDetail,
