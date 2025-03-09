@@ -51,6 +51,13 @@
                 style="margin-left: 8px"
                 >清空分组和模型</a-button
               >
+              <a-button
+                size="small"
+                type="primary"
+                @click="fetchAllModelPrices(record)"
+                style="margin-left: 8px"
+                >一键获取分组和价格</a-button
+              >
             </template>
           </template>
         </a-table>
@@ -222,12 +229,6 @@
             <div class="action-bar">
               <a-button type="primary" @click="openAddGroupDialog"
                 >添加分组</a-button
-              >
-              <a-button 
-                type="primary" 
-                @click="fetchGroupsAndPrices" 
-                style="margin-left: 8px"
-                >一键获取分组、模型和价格</a-button
               >
             </div>
 
