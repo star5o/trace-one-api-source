@@ -37,6 +37,12 @@
                 style="margin-left: 8px"
                 >编辑</a-button
               >
+              <a-button 
+                type="primary" 
+                @click="fetchGroupsAndPrices" 
+                style="margin-left: 8px"
+                >一键获取分组、模型和价格</a-button
+              >
               <a-button
                 size="small"
                 danger
@@ -50,13 +56,6 @@
                 @click="confirmClearProxy(record)"
                 style="margin-left: 8px"
                 >清空分组和模型</a-button
-              >
-              <a-button
-                size="small"
-                type="primary"
-                @click="fetchAllModelPrices(record)"
-                style="margin-left: 8px"
-                >一键获取分组和价格</a-button
               >
             </template>
           </template>
@@ -1233,45 +1232,8 @@ export default {
       }
       
       fetchingPrices.value = true;
-      message.loading("正在获取分组和模型数据...", 0);
       
       try {
-        // 先获取完整的中转站数据（包括分组和模型）
-        const proxyResponse = await apiClient.get(`/proxies/${proxy.id}`);
-        if (!proxyResponse.data || !proxyResponse.data.groups) {
-          message.error("获取中转站数据失败");
-          message.destroy();
-          return;
-        }
-        
-        const fullProxy = proxyResponse.data;
-        
-        // 如果没有分组，尝试获取分组
-        if (!fullProxy.groups || fullProxy.groups.length === 0) {
-          message.info("正在获取分组数据...");
-          try {
-            // 调用后端 API 获取分组
-            await apiClient.post(`/proxies/${proxy.id}/fetch-groups`);
-            
-            // 重新获取中转站数据
-            const updatedProxyResponse = await apiClient.get(`/proxies/${proxy.id}`);
-            if (updatedProxyResponse.data) {
-              fullProxy.groups = updatedProxyResponse.data.groups || [];
-            }
-          } catch (error) {
-            console.error('获取分组失败:', error);
-          }
-        }
-        
-        // 如果还是没有分组，则提示并返回
-        if (!fullProxy.groups || fullProxy.groups.length === 0) {
-          message.warning("当前中转站没有分组数据");
-          message.destroy();
-          return;
-        }
-        
-        // 获取模型价格信息
-        message.info("正在获取模型价格信息...");
         const response = await apiClient.get(`/proxies/${proxy.id}/model-prices`);
         
         if (response.data && response.data.success && response.data.modelPrices) {
@@ -1279,36 +1241,29 @@ export default {
           let updatedCount = 0;
           
           // 遍历所有分组
-          fullProxy.groups.forEach(group => {
-            // 找到当前分组的价格信息
-            const groupPrices = modelPrices[group.key];
+          if (proxy.groups && proxy.groups.length > 0) {
+            proxy.groups.forEach(group => {
+              // 找到当前分组的价格信息
+              const groupPrices = modelPrices[group.key];
+              
+              if (groupPrices && group.models && group.models.length > 0) {
+                // 更新模型价格信息
+                group.models.forEach(model => {
+                  if (groupPrices[model.id]) {
+                    model.prices = groupPrices[model.id];
+                    updatedCount++;
+                  }
+                });
+              }
+            });
             
-            if (groupPrices && group.models && group.models.length > 0) {
-              // 更新模型价格信息
-              group.models.forEach(model => {
-                if (groupPrices[model.id]) {
-                  model.prices = groupPrices[model.id];
-                  updatedCount++;
-                }
-              });
+            if (updatedCount > 0) {
+              message.success(`成功获取 ${updatedCount} 个模型的价格信息`);
+            } else {
+              message.warning("没有获取到任何模型的价格信息");
             }
-          });
-          
-          // 更新列表中的代理对象
-          const index = proxyList.value.findIndex(p => p.id === proxy.id);
-          if (index !== -1) {
-            proxyList.value[index] = fullProxy;
-          }
-          
-          // 如果当前正在查看该中转站的详情，也更新详情视图
-          if (currentProxy.value && currentProxy.value.id === proxy.id) {
-            currentProxy.value = fullProxy;
-          }
-          
-          if (updatedCount > 0) {
-            message.success(`成功获取 ${updatedCount} 个模型的价格信息`);
           } else {
-            message.warning("没有获取到任何模型的价格信息");
+            message.warning("当前中转站没有分组数据");
           }
         } else {
           message.error("获取模型价格失败");
@@ -1318,7 +1273,6 @@ export default {
         message.error("获取模型价格失败");
       } finally {
         fetchingPrices.value = false;
-        message.destroy();
       }
     };
     

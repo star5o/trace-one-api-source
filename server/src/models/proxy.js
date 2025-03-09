@@ -153,62 +153,6 @@ class ProxyModel {
     });
   }
 
-  // 获取中转站的分组数据
-  static async fetchGroups(id) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // 首先检查中转站是否存在
-        const proxy = await new Promise((resolve, reject) => {
-          db.get('SELECT * FROM proxies WHERE id = ?', [id], (err, proxy) => {
-            if (err) {
-              reject(err);
-            } else if (!proxy) {
-              reject(new Error('中转站不存在'));
-            } else {
-              resolve(proxy);
-            }
-          });
-        });
-        
-        // 模拟从中转站获取分组数据
-        // 在实际应用中，这里应该调用中转站的 API 获取分组数据
-        // 这里我们模拟创建一个默认分组
-        const now = Date.now();
-        const groupId = require('uuid').v4();
-        
-        // 创建默认分组
-        await new Promise((resolve, reject) => {
-          db.run(
-            'INSERT INTO groups (id, proxyId, name, key, remark, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [groupId, id, '默认分组', 'default', '系统自动创建的默认分组', now, now],
-            function(err) {
-              if (err) {
-                reject(err);
-              } else {
-                resolve();
-              }
-            }
-          );
-        });
-        
-        // 获取所有分组
-        const groups = await new Promise((resolve, reject) => {
-          db.all('SELECT * FROM groups WHERE proxyId = ?', [id], (err, groups) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(groups);
-            }
-          });
-        });
-        
-        resolve({ groups });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-  
   // 清空中转站的分组和模型
   static clearGroupsAndModels(id) {
     return new Promise(async (resolve, reject) => {

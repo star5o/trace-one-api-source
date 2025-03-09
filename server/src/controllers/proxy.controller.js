@@ -111,41 +111,6 @@ class ProxyController {
       res.status(500).json({ message: '清空分组和模型失败', error: error.message });
     }
   }
-  
-  // 获取中转站的分组数据
-  static async fetchGroups(req, res) {
-    try {
-      const { id } = req.params;
-      
-      // 首先检查中转站是否存在
-      const proxy = await ProxyModel.getById(id);
-      
-      if (!proxy) {
-        return res.status(404).json({ message: '中转站不存在' });
-      }
-      
-      // 调用中转站的 API 获取分组数据
-      const result = await ProxyModel.fetchGroups(id);
-      
-      res.json({
-        success: true,
-        message: '分组数据获取成功',
-        groups: result.groups || []
-      });
-    } catch (error) {
-      console.error('获取分组数据失败:', error);
-      
-      if (error.message === '中转站不存在') {
-        return res.status(404).json({ message: error.message });
-      }
-      
-      res.status(500).json({ 
-        success: false,
-        message: '获取分组数据失败', 
-        error: error.message 
-      });
-    }
-  }
 }
 
 module.exports = ProxyController;
