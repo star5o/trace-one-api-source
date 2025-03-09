@@ -137,23 +137,6 @@ class GroupController {
       res.status(500).json({ message: '获取模型价格失败', error: error.message });
     }
   }
-  
-  // 删除中转站的所有分组和模型
-  static async deleteAllGroupsAndModels(req, res) {
-    try {
-      const { proxyId } = req.params;
-      const result = await GroupModel.deleteAllGroupsAndModels(proxyId);
-      res.json(result);
-    } catch (error) {
-      console.error('删除分组和模型失败:', error);
-      
-      if (error.message === '中转站不存在') {
-        return res.status(404).json({ message: error.message });
-      }
-      
-      res.status(500).json({ message: '删除分组和模型失败', error: error.message });
-    }
-  }
 }
 
 module.exports = GroupController;

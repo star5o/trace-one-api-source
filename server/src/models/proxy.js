@@ -153,6 +153,83 @@ class ProxyModel {
     });
   }
 
+  // 清空中转站的分组和模型
+  static clearGroupsAndModels(id) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // 首先检查中转站是否存在
+        const proxy = await new Promise((resolve, reject) => {
+          db.get('SELECT * FROM proxies WHERE id = ?', [id], (err, proxy) => {
+            if (err) {
+              reject(err);
+            } else if (!proxy) {
+              reject(new Error('中转站不存在'));
+            } else {
+              resolve(proxy);
+            }
+          });
+        });
+        
+        // 获取该中转站的所有分组
+        const groups = await new Promise((resolve, reject) => {
+          db.all('SELECT id FROM groups WHERE proxyId = ?', [id], (err, groups) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(groups);
+            }
+          });
+        });
+        
+        // 开始事务
+        await new Promise((resolve, reject) => {
+          db.run('BEGIN TRANSACTION', err => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        try {
+          // 删除每个分组的模型
+          for (const group of groups) {
+            await new Promise((resolve, reject) => {
+              db.run('DELETE FROM models WHERE groupId = ?', [group.id], err => {
+                if (err) reject(err);
+                else resolve();
+              });
+            });
+          }
+          
+          // 删除所有分组
+          await new Promise((resolve, reject) => {
+            db.run('DELETE FROM groups WHERE proxyId = ?', [id], err => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+          
+          // 提交事务
+          await new Promise((resolve, reject) => {
+            db.run('COMMIT', err => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+          
+          resolve({ message: '分组和模型清空成功' });
+        } catch (error) {
+          // 回滚事务
+          await new Promise((resolve) => {
+            db.run('ROLLBACK', () => resolve());
+          });
+          throw error;
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  
   // 获取所有中转站
   static getAll() {
     return new Promise((resolve, reject) => {

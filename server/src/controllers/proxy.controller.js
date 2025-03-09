@@ -94,6 +94,23 @@ class ProxyController {
       res.status(500).json({ message: '获取中转站列表失败', error: error.message });
     }
   }
+  
+  // 清空中转站的分组和模型
+  static async clearGroupsAndModels(req, res) {
+    try {
+      const { id } = req.params;
+      await ProxyModel.clearGroupsAndModels(id);
+      res.json({ message: '分组和模型清空成功' });
+    } catch (error) {
+      console.error('清空分组和模型失败:', error);
+      
+      if (error.message === '中转站不存在') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      res.status(500).json({ message: '清空分组和模型失败', error: error.message });
+    }
+  }
 }
 
 module.exports = ProxyController;

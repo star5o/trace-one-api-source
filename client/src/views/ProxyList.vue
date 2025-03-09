@@ -44,6 +44,13 @@
                 style="margin-left: 8px"
                 >删除</a-button
               >
+              <a-button
+                size="small"
+                danger
+                @click="confirmClearProxy(record)"
+                style="margin-left: 8px"
+                >清空分组和模型</a-button
+              >
             </template>
           </template>
         </a-table>
@@ -221,13 +228,6 @@
                 @click="fetchGroupsAndPrices" 
                 style="margin-left: 8px"
                 >一键获取分组、模型和价格</a-button
-              >
-              <a-button 
-                type="primary" 
-                danger
-                @click="confirmDeleteAllGroupsAndModels" 
-                style="margin-left: 8px"
-                >一键删除分组和模型</a-button
               >
             </div>
 
@@ -722,6 +722,36 @@ export default {
       }
     };
 
+    // 确认清空中转站的分组和模型
+    const confirmClearProxy = (proxy) => {
+      Modal.confirm({
+        title: "警告",
+        content: `确定要清空中转站 "${proxy.name}" 的所有分组和模型吗？此操作将删除该中转站的所有分组和模型数据，但保留中转站本身。`,
+        okText: "确定",
+        cancelText: "取消",
+        okType: "danger",
+        onOk: async () => {
+          try {
+            await apiClient.delete(`/proxies/${proxy.id}/groups-and-models`);
+            message.success("分组和模型清空成功");
+            fetchProxyList();
+            if (
+              proxyDetailDrawer.visible &&
+              currentProxy.value &&
+              currentProxy.value.id === proxy.id
+            ) {
+              // 刷新当前显示的中转站详情
+              const response = await apiClient.get(`/proxies/${proxy.id}`);
+              currentProxy.value = response.data;
+            }
+          } catch (error) {
+            console.error("清空分组和模型失败:", error);
+            message.error("清空分组和模型失败");
+          }
+        },
+      });
+    };
+    
     // 确认删除中转站
     const confirmDeleteProxy = (proxy) => {
       Modal.confirm({
@@ -1177,45 +1207,6 @@ export default {
     // 价格获取状态
     const fetchingPrices = ref(false);
     
-    // 确认删除所有分组和模型
-    const confirmDeleteAllGroupsAndModels = () => {
-      // 确保 currentProxy 已经被正确设置
-      if (!currentProxy || !currentProxy.id) {
-        message.error('请先选择一个中转站');
-        return;
-      }
-      
-      Modal.confirm({
-        title: '确认删除',
-        content: `您确定要删除中转站 ${currentProxy.name || currentProxy.id} 的所有分组和模型吗？此操作不可恢复。`,
-        okText: '确认删除',
-        okType: 'danger',
-        cancelText: '取消',
-        onOk: () => deleteAllGroupsAndModels()
-      });
-    };
-    
-    // 删除所有分组和模型
-    const deleteAllGroupsAndModels = async () => {
-      try {
-        loading.value = true;
-        const response = await apiClient.delete(`/proxies/${currentProxy.id}/groups-and-models`);
-        
-        if (response.data.success) {
-          message.success(response.data.message || '删除成功');
-          // 刷新分组列表
-          await fetchGroups();
-        } else {
-          message.error(response.data.message || '删除失败');
-        }
-      } catch (error) {
-        console.error('删除分组和模型失败:', error);
-        message.error('删除分组和模型失败');
-      } finally {
-        loading.value = false;
-      }
-    };
-    
     // 更新模型逆向状态
     const updateReverseStatus = async (proxy, group, model, isReverse) => {
       try {
@@ -1354,6 +1345,7 @@ export default {
       openEditProxyDialog,
       submitProxyForm,
       confirmDeleteProxy,
+      confirmClearProxy,
       openAddGroupDialog,
       openEditGroupDialog,
       submitGroupForm,
@@ -1374,7 +1366,6 @@ export default {
       fetchModelPrices,
       fetchingPrices,
       updateReverseStatus,
-      confirmDeleteAllGroupsAndModels,
       // 价格参数相关
       priceParamsFormRef,
       priceParamsDialog,

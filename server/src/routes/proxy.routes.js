@@ -18,4 +18,7 @@ router.put('/proxies/:id', ProxyController.update);
 // 删除中转站
 router.delete('/proxies/:id', ProxyController.delete);
 
+// 清空中转站的分组和模型
+router.delete('/proxies/:id/groups-and-models', ProxyController.clearGroupsAndModels);
+
 module.exports = router;
