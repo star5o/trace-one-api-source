@@ -222,7 +222,7 @@ baseurl/api/pricing
     }
 }
 ```
-group_special 代表这个模型能在哪几个分组里面使用，model_completion_ratio 代表这个模型的补全倍率。model_group 为分组列表，每个分组的GroupRatio 代表分组倍率，ModelPrice 里的每个模型的price代表模型倍率
+group_special 代表这个模型能在哪几个分组里面使用，model_completion_ratio 代表这个模型的补全倍率。model_group 为 分组列表，每个分组的GroupRatio 代表分组倍率，ModelPrice 里的每个模型的price代表模型倍率
 
 ③VoAPI的
 baseurl/api/models/price

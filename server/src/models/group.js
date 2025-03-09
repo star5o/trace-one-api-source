@@ -260,18 +260,38 @@ class GroupModel {
         });
       });
       
+      console.log(`开始获取中转站 ${proxy.name} (${proxy.baseUrl}) 的分组信息`);
+      
       // 尝试不同的API路径获取分组信息
       let groups = [];
       let success = false;
       
       try {
         // 尝试 /api/pricing 路径
+        console.log(`尝试获取 ${proxy.baseUrl}/api/pricing 数据...`);
         const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
           timeout: 5000
         });
         
+        console.log('获取到 pricing 响应数据:', JSON.stringify(pricingResponse.data, null, 2).substring(0, 500) + '...');
+        
+        // 处理 Rix-API 格式 (优先处理)
+        if (pricingResponse.data && pricingResponse.data.data && pricingResponse.data.data.model_group) {
+          console.log('检测到 Rix-API 格式的响应数据');
+          const modelGroups = pricingResponse.data.data.model_group;
+          for (const [key, value] of Object.entries(modelGroups)) {
+            groups.push({
+              name: value.DisplayName || key,
+              desc: value.Description || '',
+              key: key
+            });
+          }
+          console.log(`从 Rix-API 格式中提取到 ${groups.length} 个分组`);
+          success = true;
+        }
         // 处理第三种格式：直接在根层级的 usable_group
-        if (pricingResponse.data && pricingResponse.data.usable_group) {
+        else if (pricingResponse.data && pricingResponse.data.usable_group) {
+          console.log('检测到根层级 usable_group 格式的响应数据');
           const usableGroups = pricingResponse.data.usable_group;
           for (const [key, value] of Object.entries(usableGroups)) {
             groups.push({
@@ -280,12 +300,14 @@ class GroupModel {
               key: key
             });
           }
+          console.log(`从根层级 usable_group 中提取到 ${groups.length} 个分组`);
           success = true;
         }
-        // 处理第一、二种格式：在 data 层级的数据
+        // 处理其他格式：在 data 层级的数据
         else if (pricingResponse.data && pricingResponse.data.data) {
           // 处理第一种格式：usable_group
           if (pricingResponse.data.data.usable_group) {
+            console.log('检测到 data 层级 usable_group 格式的响应数据');
             const usableGroups = pricingResponse.data.data.usable_group;
             for (const [key, value] of Object.entries(usableGroups)) {
               groups.push({
@@ -294,31 +316,27 @@ class GroupModel {
                 key: key
               });
             }
-            success = true;
-          }
-          // 处理第二种格式：model_group
-          else if (pricingResponse.data.data.model_group) {
-            const modelGroups = pricingResponse.data.data.model_group;
-            for (const [key, value] of Object.entries(modelGroups)) {
-              groups.push({
-                name: key,
-                desc: value.Description || value.DisplayName || '',
-                key: key
-              });
-            }
+            console.log(`从 data 层级 usable_group 中提取到 ${groups.length} 个分组`);
             success = true;
           }
         }
       } catch (error) {
-        console.log('尝试 /api/pricing 路径失败:', error.message);
+        console.error('尝试 /api/pricing 路径失败:', error.message);
+        if (error.response) {
+          console.error('错误响应状态:', error.response.status);
+          console.error('错误响应数据:', JSON.stringify(error.response.data));
+        }
       }
       
       // 如果第一种方式失败，尝试 /api/groups 路径
       if (!success) {
         try {
+          console.log(`尝试获取 ${proxy.baseUrl}/api/groups 数据...`);
           const groupsResponse = await axios.get(`${proxy.baseUrl}/api/groups`, {
             timeout: 5000
           });
+          
+          console.log('获取到 groups 响应数据:', JSON.stringify(groupsResponse.data, null, 2).substring(0, 500) + '...');
           
           if (groupsResponse.data && groupsResponse.data.data && Array.isArray(groupsResponse.data.data)) {
             groups = groupsResponse.data.data.map(group => ({
@@ -326,14 +344,20 @@ class GroupModel {
               desc: group.desc || '',
               key: group.key
             }));
+            console.log(`从 /api/groups 中提取到 ${groups.length} 个分组`);
             success = true;
           }
         } catch (error) {
-          console.log('尝试 /api/groups 路径失败:', error.message);
+          console.error('尝试 /api/groups 路径失败:', error.message);
+          if (error.response) {
+            console.error('错误响应状态:', error.response.status);
+            console.error('错误响应数据:', JSON.stringify(error.response.data));
+          }
         }
       }
       
       if (!success) {
+        console.error(`无法从 ${proxy.baseUrl} 获取分组信息`);
         throw new Error('无法获取分组信息');
       }
       
