@@ -590,7 +590,7 @@ export default {
       exchangeRate: [
         { required: true, message: "请输入汇率", trigger: "blur" },
         { type: "number", message: "汇率必须是数字", trigger: "blur" },
-        { type: "number", min: 1, message: "汇率必须大于1", trigger: "blur" },
+        { type: "number", min: 0.01, message: "汇率必须大于0.01", trigger: "blur" },
       ],
     };
 
