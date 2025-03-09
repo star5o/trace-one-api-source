@@ -38,7 +38,8 @@
                 >编辑</a-button
               >
               <a-button 
-                type="primary" 
+                size="small"
+                type="primary"
                 @click="fetchGroupsAndPrices" 
                 style="margin-left: 8px"
                 >一键获取分组、模型和价格</a-button
