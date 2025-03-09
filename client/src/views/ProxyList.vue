@@ -895,87 +895,6 @@ export default {
       }
     };
     
-    // 一键获取分组、模型和价格
-    const fetchGroupsAndPrices = async () => {
-      if (!currentProxy.value) return;
-      
-      try {
-        message.info("正在一键获取分组、模型和价格，请稍候...");
-        fetchingPrices.value = true;
-        
-        // 第一步：获取分组
-        const response = await apiClient.post(`/proxies/${currentProxy.value.id}/auto-fetch-groups`);
-        
-        let groupsAdded = 0;
-        if (response.data && response.data.success) {
-          groupsAdded = response.data.count || 0;
-        }
-        
-        // 第二步：获取所有模型价格（包含模型列表）
-        const priceResponse = await apiClient.get(`/proxies/${currentProxy.value.id}/model-prices`);
-        
-        // 更新中转站详情，获取新增的分组
-        await fetchProxyList();
-        const detailResponse = await apiClient.get(`/proxies/${currentProxy.value.id}`);
-        currentProxy.value = detailResponse.data;
-        
-        let modelsAdded = 0;
-        let updatedCount = 0;
-        
-        if (priceResponse.data && priceResponse.data.success && priceResponse.data.modelPrices) {
-          const modelPrices = priceResponse.data.modelPrices;
-          
-          // 遍历所有分组
-          if (currentProxy.value.groups && currentProxy.value.groups.length > 0) {
-            // 为每个分组创建模型列表
-            for (const group of currentProxy.value.groups) {
-              // 找到当前分组的价格信息
-              const groupPrices = modelPrices[group.key];
-              
-              if (groupPrices) {
-                // 如果分组没有模型列表，创建一个空数组
-                if (!group.models) {
-                  group.models = [];
-                }
-                
-                // 从价格信息中提取模型列表
-                for (const modelId in groupPrices) {
-                  // 检查模型是否已存在
-                  const existingModel = group.models.find(m => m.id === modelId);
-                  
-                  if (!existingModel) {
-                    // 添加新模型
-                    group.models.push({
-                      id: modelId,
-                      name: modelId,
-                      prices: groupPrices[modelId]
-                    });
-                    modelsAdded++;
-                    updatedCount++;
-                  } else {
-                    // 更新现有模型的价格
-                    existingModel.prices = groupPrices[modelId];
-                    updatedCount++;
-                  }
-                }
-              }
-            }
-            
-            // 显示成功信息
-            message.success(`一键获取成功！新增 ${groupsAdded} 个分组，${modelsAdded} 个模型，更新 ${updatedCount} 个模型的价格信息`);
-          } else {
-            message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但没有获取到模型数据`);
-          }
-        } else {
-          message.success(`成功获取分组！新增 ${groupsAdded} 个分组，但获取模型和价格失败`);
-        }
-      } catch (error) {
-        console.error("一键获取分组、模型和价格失败:", error);
-        message.error("一键获取分组、模型和价格失败");
-      } finally {
-        fetchingPrices.value = false;
-      }
-    };
     
     // 为操作列中的按钮提供的方法，接收代理记录作为参数
     const fetchGroupsAndPricesForProxy = async (proxy) => {
@@ -1012,8 +931,7 @@ export default {
       }
     };
 
-    // 自动获取分组 (保留兼容性)
-    const autoFetchGroups = fetchGroupsAndPrices;
+    // 自动获取分组 (保留兼容性，直接使用 fetchGroupsAndPrices)
 
     // 发送到溯源页面
     const sendToTrace = (proxy, group, model) => {
@@ -1260,8 +1178,8 @@ export default {
       }
     };
     
-    // 获取所有模型价格信息
-    const fetchAllModelPrices = async (proxy) => {
+    // 获取模型价格信息的通用函数
+    const fetchModelPricesBase = async (proxy, specificGroup = null) => {
       if (!proxy || !proxy.id) {
         message.error("中转站信息不完整");
         return;
@@ -1276,9 +1194,11 @@ export default {
           const modelPrices = response.data.modelPrices;
           let updatedCount = 0;
           
-          // 遍历所有分组
-          if (proxy.groups && proxy.groups.length > 0) {
-            proxy.groups.forEach(group => {
+          // 要处理的分组列表
+          const groupsToProcess = specificGroup ? [specificGroup] : (proxy.groups || []);
+          
+          if (groupsToProcess.length > 0) {
+            groupsToProcess.forEach(group => {
               // 找到当前分组的价格信息
               const groupPrices = modelPrices[group.key];
               
@@ -1290,64 +1210,25 @@ export default {
                     updatedCount++;
                   }
                 });
+              } else if (groupPrices && specificGroup) {
+                message.warning("当前分组没有模型数据");
+              } else if (specificGroup) {
+                message.warning(`未找到分组 ${group.name} 的价格信息`);
               }
             });
             
             if (updatedCount > 0) {
-              message.success(`成功获取 ${updatedCount} 个模型的价格信息`);
-            } else {
+              message.success(specificGroup 
+                ? "模型价格获取成功" 
+                : `成功获取 ${updatedCount} 个模型的价格信息`);
+            } else if (!specificGroup) {
               message.warning("没有获取到任何模型的价格信息");
             }
           } else {
             message.warning("当前中转站没有分组数据");
           }
         } else {
-          message.error("获取模型价格失败");
-        }
-      } catch (error) {
-        console.error("获取模型价格失败:", error);
-        message.error("获取模型价格失败");
-      } finally {
-        fetchingPrices.value = false;
-      }
-    };
-    
-    // 获取单个分组的模型价格信息
-    const fetchModelPrices = async (proxy, group) => {
-      if (!proxy || !proxy.id) {
-        message.error("中转站信息不完整");
-        return;
-      }
-      
-      fetchingPrices.value = true;
-      
-      try {
-        const response = await apiClient.get(`/proxies/${proxy.id}/model-prices`);
-        
-        if (response.data && response.data.success && response.data.modelPrices) {
-          const modelPrices = response.data.modelPrices;
-          
-          // 找到当前分组的价格信息
-          const groupPrices = modelPrices[group.key];
-          
-          if (groupPrices) {
-            // 更新模型价格信息
-            if (group.models && group.models.length > 0) {
-              group.models.forEach(model => {
-                if (groupPrices[model.id]) {
-                  model.prices = groupPrices[model.id];
-                }
-              });
-              
-              message.success("模型价格获取成功");
-            } else {
-              message.warning("当前分组没有模型数据");
-            }
-          } else {
-            message.warning(`未找到分组 ${group.name} 的价格信息`);
-          }
-        } else {
-          message.error("获取模型价格失败: " + (response.data.error || "未知错误"));
+          message.error("获取模型价格失败: " + (response.data?.error || "未知错误"));
         }
       } catch (error) {
         console.error("获取模型价格失败:", error);
@@ -1355,6 +1236,16 @@ export default {
       } finally {
         fetchingPrices.value = false;
       }
+    };
+    
+    // 获取所有模型价格信息
+    const fetchAllModelPrices = async (proxy) => {
+      return fetchModelPricesBase(proxy);
+    };
+    
+    // 获取单个分组的模型价格信息
+    const fetchModelPrices = async (proxy, group) => {
+      return fetchModelPricesBase(proxy, group);
     };
 
     onMounted(() => {
@@ -1390,9 +1281,7 @@ export default {
       modelColumns,
       confirmDeleteGroup,
       refreshModels,
-      fetchGroupsAndPrices,
       fetchGroupsAndPricesForProxy,
-      autoFetchGroups,
       sendToTrace,
       viewModelDetail,
       editModelRemark,
