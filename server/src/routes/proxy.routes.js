@@ -21,4 +21,7 @@ router.delete('/proxies/:id', ProxyController.delete);
 // 清空中转站的分组和模型
 router.delete('/proxies/:id/groups-and-models', ProxyController.clearGroupsAndModels);
 
+// 获取中转站的分组数据
+router.post('/proxies/:id/fetch-groups', ProxyController.fetchGroups);
+
 module.exports = router;
