@@ -337,7 +337,7 @@ class GroupModel {
         throw new Error('无法获取分组信息');
       }
       //输出groups长度
-      console.log(`获取到 ${groups.length} 个分组`);
+      console.log(`后端获取到分组： ${groups} `);
       
       // 开始事务
       await new Promise((resolve, reject) => {
