@@ -336,6 +336,8 @@ class GroupModel {
       if (!success) {
         throw new Error('无法获取分组信息');
       }
+      //输出groups长度
+      console.log(`获取到 ${groups.length} 个分组`);
       
       // 开始事务
       await new Promise((resolve, reject) => {
@@ -381,6 +383,9 @@ class GroupModel {
               createdAt: now,
               updatedAt: now
             });
+          }
+          else {
+            console.log(`分组 ${group.name} 已存在，跳过创建`);
           }
         }
         
