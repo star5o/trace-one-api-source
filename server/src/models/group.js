@@ -299,8 +299,8 @@ class GroupModel {
           // 处理第二种格式：model_group
           else if (pricingResponse.data.data.model_group) {
             const modelGroups = pricingResponse.data.data.model_group;
+            console.log('model_group:', JSON.stringify(modelGroups, null, 2));
             for (const [key, value] of Object.entries(modelGroups)) {
-              console.log(`model_group: ${key} - ${value}`);
               groups.push({
                 name: key,
                 desc: value.Description || value.DisplayName || '',
