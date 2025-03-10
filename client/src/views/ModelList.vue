@@ -418,16 +418,26 @@ export default {
           const aOutputPrice = a.prices ? (a.prices.output_price || a.prices.outputPrice || 0) : 0;
           const bOutputPrice = b.prices ? (b.prices.output_price || b.prices.outputPrice || 0) : 0;
           
+          // 获取汇率
+          const aExchangeRate = a.exchangeRate || 7.0;
+          const bExchangeRate = b.exchangeRate || 7.0;
+          
+          // 计算人民币价格
+          const aInputPriceRMB = aInputPrice * aExchangeRate;
+          const bInputPriceRMB = bInputPrice * bExchangeRate;
+          const aOutputPriceRMB = aOutputPrice * aExchangeRate;
+          const bOutputPriceRMB = bOutputPrice * bExchangeRate;
+          
           // 根据排序选项进行排序
           switch (sortOption.value) {
             case 'inputPriceAsc':
-              return aInputPrice - bInputPrice;
+              return aInputPriceRMB - bInputPriceRMB;
             case 'inputPriceDesc':
-              return bInputPrice - aInputPrice;
+              return bInputPriceRMB - aInputPriceRMB;
             case 'outputPriceAsc':
-              return aOutputPrice - bOutputPrice;
+              return aOutputPriceRMB - bOutputPriceRMB;
             case 'outputPriceDesc':
-              return bOutputPrice - aOutputPrice;
+              return bOutputPriceRMB - aOutputPriceRMB;
             default:
               return 0;
           }
