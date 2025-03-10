@@ -595,7 +595,8 @@ export default {
         }
       }
       
-      router.push({
+      // 构建 URL
+      const url = router.resolve({
         path: "/trace",
         query: {
           baseUrl: proxy.baseUrl,
@@ -603,7 +604,10 @@ export default {
           model: model.id,
           groupName: groupName
         }
-      });
+      }).href;
+      
+      // 在新窗口中打开
+      window.open(url, '_blank');
     };
 
     // 查看模型详情
