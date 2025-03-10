@@ -300,6 +300,7 @@ class GroupModel {
           else if (pricingResponse.data.data.model_group) {
             const modelGroups = pricingResponse.data.data.model_group;
             for (const [key, value] of Object.entries(modelGroups)) {
+              console.log(`model_group: ${key} - ${value}`);
               groups.push({
                 name: key,
                 desc: value.Description || value.DisplayName || '',
@@ -336,8 +337,6 @@ class GroupModel {
       if (!success) {
         throw new Error('无法获取分组信息');
       }
-      //输出groups长度
-      console.log(`后端获取到分组： ${groups} `);
       
       // 开始事务
       await new Promise((resolve, reject) => {
