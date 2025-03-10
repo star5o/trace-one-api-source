@@ -26,6 +26,32 @@
               allowClear
             />
           </div>
+          <div class="model-filters">
+            <a-space>
+              <a-select
+                v-model:value="sortOption"
+                style="width: 180px"
+                placeholder="按价格排序"
+                @change="handleSortChange"
+              >
+                <a-select-option value="default">默认排序</a-select-option>
+                <a-select-option value="inputPriceAsc">输入价格升序</a-select-option>
+                <a-select-option value="inputPriceDesc">输入价格降序</a-select-option>
+                <a-select-option value="outputPriceAsc">输出价格升序</a-select-option>
+                <a-select-option value="outputPriceDesc">输出价格降序</a-select-option>
+              </a-select>
+              <a-select
+                v-model:value="reverseFilter"
+                style="width: 150px"
+                placeholder="选择是否逆向"
+                @change="handleReverseFilterChange"
+              >
+                <a-select-option value="all">全部模型</a-select-option>
+                <a-select-option value="reverse">逆向模型</a-select-option>
+                <a-select-option value="nonReverse">非逆向模型</a-select-option>
+              </a-select>
+            </a-space>
+          </div>
         </div>
         <a-table
           :dataSource="filteredModels"
@@ -176,6 +202,8 @@ export default {
     const loading = ref(true);
     const allModels = ref([]);
     const modelSearchText = ref("");
+    const sortOption = ref("default");
+    const reverseFilter = ref("all");
     const proxies = ref([]);
 
     // 模型备注对话框
@@ -341,21 +369,72 @@ export default {
       // 搜索逻辑在 filteredModels 计算属性中实现
     };
 
+    // 处理排序选项变化
+    const handleSortChange = (value) => {
+      sortOption.value = value;
+    };
+
+    // 处理逆向筛选变化
+    const handleReverseFilterChange = (value) => {
+      reverseFilter.value = value;
+    };
+
     // 过滤后的模型列表
     const filteredModels = computed(() => {
-      if (!modelSearchText.value) {
-        return allModels.value;
+      // 先根据搜索文本过滤
+      let filtered = allModels.value;
+      
+      if (modelSearchText.value) {
+        const searchText = modelSearchText.value.toLowerCase();
+        filtered = filtered.filter(model => {
+          return (
+            model.id.toLowerCase().includes(searchText) ||
+            (model.remark && model.remark.toLowerCase().includes(searchText)) ||
+            (model.proxyName && model.proxyName.toLowerCase().includes(searchText)) ||
+            (model.groupName && model.groupName.toLowerCase().includes(searchText))
+          );
+        });
       }
       
-      const searchText = modelSearchText.value.toLowerCase();
-      return allModels.value.filter(model => {
-        return (
-          model.id.toLowerCase().includes(searchText) ||
-          (model.remark && model.remark.toLowerCase().includes(searchText)) ||
-          (model.proxyName && model.proxyName.toLowerCase().includes(searchText)) ||
-          (model.groupName && model.groupName.toLowerCase().includes(searchText))
-        );
-      });
+      // 根据逆向状态过滤
+      if (reverseFilter.value !== 'all') {
+        filtered = filtered.filter(model => {
+          if (reverseFilter.value === 'reverse') {
+            return !!model.is_reverse;
+          } else {
+            return !model.is_reverse;
+          }
+        });
+      }
+      
+      // 根据选择的排序方式排序
+      if (sortOption.value !== 'default') {
+        filtered = [...filtered]; // 创建副本以避免直接修改原数组
+        
+        filtered.sort((a, b) => {
+          // 获取价格数据
+          const aInputPrice = a.prices ? (a.prices.input_price || a.prices.inputPrice || 0) : 0;
+          const bInputPrice = b.prices ? (b.prices.input_price || b.prices.inputPrice || 0) : 0;
+          const aOutputPrice = a.prices ? (a.prices.output_price || a.prices.outputPrice || 0) : 0;
+          const bOutputPrice = b.prices ? (b.prices.output_price || b.prices.outputPrice || 0) : 0;
+          
+          // 根据排序选项进行排序
+          switch (sortOption.value) {
+            case 'inputPriceAsc':
+              return aInputPrice - bInputPrice;
+            case 'inputPriceDesc':
+              return bInputPrice - aInputPrice;
+            case 'outputPriceAsc':
+              return aOutputPrice - bOutputPrice;
+            case 'outputPriceDesc':
+              return bOutputPrice - aOutputPrice;
+            default:
+              return 0;
+          }
+        });
+      }
+      
+      return filtered;
     });
 
     // 更新模型的逆向状态
@@ -555,12 +634,16 @@ export default {
       loading,
       allModels,
       modelSearchText,
+      sortOption,
+      reverseFilter,
       modelColumns,
       filteredModels,
       modelRemarkDialog,
       modelPriceDialog,
       formatDate,
       handleModelSearch,
+      handleSortChange,
+      handleReverseFilterChange,
       updateReverseStatus,
       editModelRemark,
       saveModelRemark,
@@ -588,6 +671,16 @@ export default {
   display: flex;
   justify-content: space-between;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.model-search {
+  margin-bottom: 8px;
+}
+
+.model-filters {
+  margin-bottom: 8px;
 }
 
 .loading-container {
