@@ -323,6 +323,13 @@
             style="width: 100%"
           />
         </a-form-item>
+        <a-form-item label="Cookie" name="cookie" extra="获取分组、模型和价格时使用的Cookie">
+          <a-textarea
+            v-model:value="proxyForm.cookie"
+            placeholder="请输入Cookie（可选）"
+            :rows="3"
+          />
+        </a-form-item>
       </a-form>
       <template #footer>
         <a-button @click="proxyDialog.visible = false">取消</a-button>
@@ -572,6 +579,7 @@ export default {
       name: "",
       baseUrl: "",
       exchangeRate: 7.0,
+      cookie: "",
     });
 
     const proxyRules = {
@@ -673,6 +681,7 @@ export default {
       proxyForm.name = "";
       proxyForm.baseUrl = "";
       proxyForm.exchangeRate = 7.0;
+      proxyForm.cookie = "";
       proxyDialog.isEdit = false;
       proxyDialog.visible = true;
     };
@@ -683,6 +692,7 @@ export default {
       proxyForm.name = proxy.name;
       proxyForm.baseUrl = proxy.baseUrl;
       proxyForm.exchangeRate = proxy.exchangeRate || 7.0;
+      proxyForm.cookie = proxy.cookie || "";
       proxyDialog.isEdit = true;
       proxyDialog.visible = true;
     };
@@ -701,6 +711,7 @@ export default {
               name: proxyForm.name,
               baseUrl: proxyForm.baseUrl,
               exchangeRate: proxyForm.exchangeRate,
+              cookie: proxyForm.cookie,
             });
             message.success("中转站更新成功");
           } else {
@@ -709,6 +720,7 @@ export default {
               name: proxyForm.name,
               baseUrl: proxyForm.baseUrl,
               exchangeRate: proxyForm.exchangeRate,
+              cookie: proxyForm.cookie,
             });
             message.success("中转站添加成功");
           }

@@ -267,7 +267,8 @@ class GroupModel {
       try {
         // 尝试 /api/pricing 路径
         const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
-          timeout: 5000
+          timeout: 5000,
+          headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
         });
         
         // 处理第三种格式：直接在根层级的 usable_group
@@ -299,7 +300,6 @@ class GroupModel {
           // 处理第二种格式：model_group
           else if (pricingResponse.data.data.model_group) {
             const modelGroups = pricingResponse.data.data.model_group;
-            console.log('model_group:', JSON.stringify(modelGroups, null, 2));
             for (const [key, value] of Object.entries(modelGroups)) {
               groups.push({
                 name: key,
@@ -318,7 +318,8 @@ class GroupModel {
       if (!success) {
         try {
           const groupsResponse = await axios.get(`${proxy.baseUrl}/api/groups`, {
-            timeout: 5000
+            timeout: 5000,
+            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
           });
           
           if (groupsResponse.data && groupsResponse.data.data && Array.isArray(groupsResponse.data.data)) {
@@ -439,7 +440,8 @@ class GroupModel {
         // 尝试 /api/pricing 路径
         try {
           const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
-            timeout: 5000
+            timeout: 5000,
+            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
           });
           apiResponses.push(pricingResponse);
         } catch (error) {
@@ -449,7 +451,8 @@ class GroupModel {
         // 尝试 /api/models/price 路径
         try {
           const modelsPriceResponse = await axios.get(`${proxy.baseUrl}/api/models/price`, {
-            timeout: 5000
+            timeout: 5000,
+            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
           });
           apiResponses.push(modelsPriceResponse);
         } catch (error) {

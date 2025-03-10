@@ -53,6 +53,20 @@ const migrateModelsTable = async () => {
   }
 };
 
+// 迁移 proxies 表结构
+const migrateProxiesTable = async () => {
+  try {
+    // 添加 cookie 列
+    await addColumnIfNotExists('proxies', 'cookie', 'TEXT');
+    
+    console.log('proxies 表迁移完成');
+    return true;
+  } catch (error) {
+    console.error('proxies 表迁移失败:', error);
+    return false;
+  }
+};
+
 // 迁移traces表结构
 const migrateTracesTable = async () => {
   return new Promise((resolve, reject) => {
@@ -258,6 +272,7 @@ const migrateDatabase = async () => {
       
       // 迁移proxies表
       await addColumnIfNotExists('proxies', 'exchangeRate', 'REAL DEFAULT 7.0');
+      await migrateProxiesTable();
       
       // 迁移traces表
       await migrateTracesTable();
