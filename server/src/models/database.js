@@ -46,6 +46,7 @@ const initDatabase = () => {
           name TEXT NOT NULL,
           key TEXT NOT NULL,
           remark TEXT,
+          group_ratio REAL DEFAULT 1.0,
           createdAt INTEGER NOT NULL,
           updatedAt INTEGER NOT NULL,
           FOREIGN KEY (proxyId) REFERENCES proxies (id) ON DELETE CASCADE
@@ -104,6 +105,26 @@ const initDatabase = () => {
                 console.error('添加 groupName 列失败:', err);
               } else {
                 console.log('成功添加 groupName 列到 traces 表');
+              }
+            });
+          }
+        }
+      });
+      
+      // 检查是否需要添加 group_ratio 列到 groups 表（兼容旧版本）
+      db.all("PRAGMA table_info(groups)", [], (err, rows) => {
+        if (err) {
+          console.error('检查 groups 表结构失败:', err);
+        } else {
+          // 检查是否存在 group_ratio 列
+          const hasGroupRatio = rows.some(row => row.name === 'group_ratio');
+          if (!hasGroupRatio) {
+            // 添加 group_ratio 列
+            db.run("ALTER TABLE groups ADD COLUMN group_ratio REAL DEFAULT 1.0", (err) => {
+              if (err) {
+                console.error('添加 group_ratio 列失败:', err);
+              } else {
+                console.log('成功添加 group_ratio 列到 groups 表');
               }
             });
           }

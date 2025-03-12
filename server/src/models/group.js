@@ -4,14 +4,14 @@ const axios = require('axios');
 
 class GroupModel {
   // 创建分组
-  static create(proxyId, name, key, remark = null) {
+  static create(proxyId, name, key, remark = null, group_ratio = 1.0) {
     return new Promise((resolve, reject) => {
       const id = uuidv4();
       const now = Date.now();
       
       db.run(
-        'INSERT INTO groups (id, proxyId, name, key, remark, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [id, proxyId, name, key, remark, now, now],
+        'INSERT INTO groups (id, proxyId, name, key, remark, group_ratio, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [id, proxyId, name, key, remark, group_ratio, now, now],
         function(err) {
           if (err) {
             reject(err);
@@ -22,6 +22,7 @@ class GroupModel {
               name,
               key,
               remark,
+              group_ratio,
               createdAt: now,
               updatedAt: now
             });
@@ -32,13 +33,13 @@ class GroupModel {
   }
 
   // 更新分组
-  static update(id, name, key, remark = null) {
+  static update(id, name, key, remark = null, group_ratio = 1.0) {
     return new Promise((resolve, reject) => {
       const now = Date.now();
       
       db.run(
-        'UPDATE groups SET name = ?, key = ?, remark = ?, updatedAt = ? WHERE id = ?',
-        [name, key, remark, now, id],
+        'UPDATE groups SET name = ?, key = ?, remark = ?, group_ratio = ?, updatedAt = ? WHERE id = ?',
+        [name, key, remark, group_ratio, now, id],
         function(err) {
           if (err) {
             reject(err);
@@ -50,6 +51,7 @@ class GroupModel {
               name,
               key,
               remark,
+              group_ratio,
               updatedAt: now
             });
           }
@@ -265,29 +267,36 @@ class GroupModel {
       let success = false;
       
       try {
-        // 尝试 /api/pricing 路径
-        const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
-          timeout: 5000,
-          headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-        });
+        // 尝试不同的API路径获取分组信息
+        let apiResponses = [];
         
-        // 处理第三种格式：直接在根层级的 usable_group
-        if (pricingResponse.data && pricingResponse.data.usable_group) {
-          const usableGroups = pricingResponse.data.usable_group;
-          for (const [key, value] of Object.entries(usableGroups)) {
-            groups.push({
-              name: key,
-              desc: value,
-              key: key
-            });
-          }
-          success = true;
+        // 尝试 /api/pricing 路径
+        try {
+          const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
+            timeout: 5000,
+            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
+          });
+          apiResponses.push(pricingResponse);
+        } catch (error) {
+          console.log('尝试 /api/pricing 路径失败:', error.message);
         }
-        // 处理第一、二种格式：在 data 层级的数据
-        else if (pricingResponse.data && pricingResponse.data.data) {
-          // 处理第一种格式：usable_group
-          if (pricingResponse.data.data.usable_group) {
-            const usableGroups = pricingResponse.data.data.usable_group;
+        
+        // 尝试 /api/groups 路径
+        try {
+          const groupsResponse = await axios.get(`${proxy.baseUrl}/api/groups`, {
+            timeout: 5000,
+            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
+          });
+          apiResponses.push(groupsResponse);
+        } catch (error) {
+          console.log('尝试 /api/groups 路径失败:', error.message);
+        }
+        
+        // 处理所有响应
+        for (const response of apiResponses) {
+          // 处理第三种格式：直接在根层级的 usable_group
+          if (response.data && response.data.usable_group) {
+            const usableGroups = response.data.usable_group;
             for (const [key, value] of Object.entries(usableGroups)) {
               groups.push({
                 name: key,
@@ -297,42 +306,36 @@ class GroupModel {
             }
             success = true;
           }
-          // 处理第二种格式：model_group
-          else if (pricingResponse.data.data.model_group) {
-            const modelGroups = pricingResponse.data.data.model_group;
-            for (const [key, value] of Object.entries(modelGroups)) {
-              groups.push({
-                name: key,
-                desc: value.Description || value.DisplayName || '',
-                key: key
-              });
+          // 处理第一、二种格式：在 data 层级的数据
+          else if (response.data && response.data.data) {
+            // 处理第一种格式：usable_group
+            if (response.data.data.usable_group) {
+              const usableGroups = response.data.data.usable_group;
+              for (const [key, value] of Object.entries(usableGroups)) {
+                groups.push({
+                  name: key,
+                  desc: value,
+                  key: key
+                });
+              }
+              success = true;
             }
-            success = true;
+            // 处理第二种格式：model_group
+            else if (response.data.data.model_group) {
+              const modelGroups = response.data.data.model_group;
+              for (const [key, value] of Object.entries(modelGroups)) {
+                groups.push({
+                  name: key,
+                  desc: value.Description || value.DisplayName || '',
+                  key: key
+                });
+              }
+              success = true;
+            }
           }
         }
       } catch (error) {
-        console.log('尝试 /api/pricing 路径失败:', error.message);
-      }
-      
-      // 如果第一种方式失败，尝试 /api/groups 路径
-      if (!success) {
-        try {
-          const groupsResponse = await axios.get(`${proxy.baseUrl}/api/groups`, {
-            timeout: 5000,
-            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-          });
-          
-          if (groupsResponse.data && groupsResponse.data.data && Array.isArray(groupsResponse.data.data)) {
-            groups = groupsResponse.data.data.map(group => ({
-              name: group.name,
-              desc: group.desc || '',
-              key: group.key
-            }));
-            success = true;
-          }
-        } catch (error) {
-          console.log('尝试 /api/groups 路径失败:', error.message);
-        }
+        console.log('尝试获取分组信息失败:', error.message);
       }
       
       if (!success) {

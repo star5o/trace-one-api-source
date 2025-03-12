@@ -367,6 +367,19 @@
         <a-form-item label="备注" name="remark">
           <a-input v-model:value="groupForm.remark" placeholder="请输入备注" />
         </a-form-item>
+        <a-form-item label="分组倍率" name="group_ratio">
+          <a-input-number
+            v-model:value="groupForm.group_ratio"
+            :min="0.01"
+            :max="10"
+            :step="0.01"
+            style="width: 100%"
+            placeholder="请输入分组倍率"
+          />
+          <div class="form-help-text">
+            分组倍率将影响该分组下所有模型的价格计算，默认为1.0
+          </div>
+        </a-form-item>
       </a-form>
       <template #footer>
         <a-button @click="groupDialog.visible = false">取消</a-button>
@@ -603,6 +616,7 @@ export default {
       name: "",
       key: "",
       remark: "",
+      group_ratio: 1.0,
     });
 
     const groupRules = {
@@ -613,6 +627,10 @@ export default {
       key: [{ required: true, message: "请输入API Key", trigger: "blur" }],
       remark: [
         { max: 200, message: "备注长度不能超过200个字符", trigger: "blur" },
+      ],
+      group_ratio: [
+        { required: true, message: "请输入分组倍率", trigger: "blur" },
+        { type: "number", min: 0.01, message: "倍率必须大于0.01", trigger: "blur" },
       ],
     };
 
@@ -788,6 +806,7 @@ export default {
       groupForm.name = "";
       groupForm.key = "";
       groupForm.remark = "";
+      groupForm.group_ratio = 1.0;
       groupDialog.isEdit = false;
       groupDialog.visible = true;
     };
@@ -799,6 +818,7 @@ export default {
       groupForm.name = group.name;
       groupForm.key = group.key;
       groupForm.remark = group.remark;
+      groupForm.group_ratio = group.group_ratio || 1.0;
       groupDialog.isEdit = true;
       groupDialog.visible = true;
     };
@@ -817,6 +837,7 @@ export default {
               name: groupForm.name,
               key: groupForm.key,
               remark: groupForm.remark,
+              group_ratio: groupForm.group_ratio,
             });
             message.success("分组更新成功");
           } else {
@@ -826,6 +847,7 @@ export default {
               name: groupForm.name,
               key: groupForm.key,
               remark: groupForm.remark,
+              group_ratio: groupForm.group_ratio,
             });
             message.success("分组添加成功");
           }
