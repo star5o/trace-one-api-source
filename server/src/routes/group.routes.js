@@ -24,4 +24,7 @@ router.post('/groups/:id/refresh-models', GroupController.refreshModels);
 // 获取分组和价格信息
 router.post('/proxies/:proxyId/fetch-groups-and-prices', GroupController.fetchGroupsAndPrices);
 
+// 更新分组价格倍率
+router.put('/groups/:id/ratio', GroupController.updateGroupRatio);
+
 module.exports = router;

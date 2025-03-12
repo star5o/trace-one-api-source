@@ -44,30 +44,23 @@ class ModelController {
   static async updatePriceParams(req, res) {
     try {
       const { id } = req.params;
-      const { group_ratio, model_ratio, completion_ratio } = req.body;
+      const { model_ratio, completion_ratio } = req.body;
       
       // 验证参数
-      if (group_ratio === undefined || model_ratio === undefined || completion_ratio === undefined) {
+      if (model_ratio === undefined || completion_ratio === undefined) {
         return res.status(400).json({ message: '缺少必要的价格参数' });
       }
       
-      if (group_ratio <= 0 || model_ratio <= 0 || completion_ratio <= 0) {
+      if (model_ratio <= 0 || completion_ratio <= 0) {
         return res.status(400).json({ message: '价格参数必须大于0' });
       }
       
       const now = Date.now();
       
-      // 准备价格数据
-      const priceData = JSON.stringify({
-        group_ratio,
-        model_ratio,
-        completion_ratio
-      });
-      
       // 更新模型价格参数
       db.run(
-        'UPDATE models SET price_data = ?, updatedAt = ? WHERE id = ?',
-        [priceData, now, id],
+        'UPDATE models SET model_ratio = ?, completion_ratio = ?, updatedAt = ? WHERE id = ?',
+        [model_ratio, completion_ratio, now, id],
         function(err) {
           if (err) {
             console.error('更新模型价格参数失败:', err);
@@ -78,26 +71,80 @@ class ModelController {
             return res.status(404).json({ message: '模型不存在' });
           }
           
-          // 计算输入和输出价格
-          const inputPrice = group_ratio * model_ratio * 2;
-          const outputPrice = inputPrice * completion_ratio;
-          
-          res.json({ 
-            id, 
-            price_data: {
-              group_ratio,
-              model_ratio,
-              completion_ratio
-            },
-            input_price: inputPrice,
-            output_price: outputPrice,
-            updatedAt: now 
-          });
+          // 获取分组倍率
+          db.get(
+            `SELECT g.group_ratio 
+             FROM models m 
+             JOIN groups g ON m.group_id = g.id 
+             WHERE m.id = ?`,
+            [id],
+            (err, row) => {
+              if (err) {
+                console.error('获取分组倍率失败:', err);
+                return res.status(500).json({ message: '获取分组倍率失败', error: err.message });
+              }
+
+              const group_ratio = row?.group_ratio || 1.0;
+              
+              // 计算输入和输出价格
+              const inputPrice = group_ratio * model_ratio * 2;
+              const outputPrice = inputPrice * completion_ratio;
+              
+              res.json({ 
+                id,
+                model_ratio,
+                completion_ratio,
+                group_ratio,
+                input_price: inputPrice,
+                output_price: outputPrice,
+                updatedAt: now 
+              });
+            }
+          );
         }
       );
     } catch (error) {
       console.error('更新模型价格参数失败:', error);
       res.status(500).json({ message: '更新模型价格参数失败', error: error.message });
+    }
+  }
+
+  // 获取模型列表
+  static async getByGroupId(req, res) {
+    try {
+      const { groupId } = req.params;
+      
+      db.all(
+        `SELECT m.*, g.group_ratio
+         FROM models m
+         JOIN groups g ON m.group_id = g.id
+         WHERE m.group_id = ?
+         ORDER BY m.id DESC`,
+        [groupId],
+        (err, rows) => {
+          if (err) {
+            console.error('获取模型列表失败:', err);
+            return res.status(500).json({ message: '获取模型列表失败', error: err.message });
+          }
+          
+          // 处理每个模型的价格信息
+          const models = rows.map(model => {
+            const inputPrice = model.group_ratio * model.model_ratio * 2;
+            const outputPrice = inputPrice * model.completion_ratio;
+            
+            return {
+              ...model,
+              input_price: inputPrice,
+              output_price: outputPrice
+            };
+          });
+          
+          res.json(models);
+        }
+      );
+    } catch (error) {
+      console.error('获取模型列表失败:', error);
+      res.status(500).json({ message: '获取模型列表失败', error: error.message });
     }
   }
   

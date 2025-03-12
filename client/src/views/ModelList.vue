@@ -73,18 +73,18 @@
               />
             </template>
             <template v-else-if="column.key === 'inputPrice'">
-              <span v-if="record.prices && (record.prices.inputPrice !== undefined || record.prices.input_price !== undefined)">
-                {{ (record.prices.input_price || record.prices.inputPrice).toFixed(4) }} 美元/M tokens
+              <span v-if="record.input_price !== undefined">
+                {{ record.input_price.toFixed(4) }} 美元/M tokens
                 <br>
-                <small>{{ ((record.prices.input_price || record.prices.inputPrice) * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
+                <small>{{ (record.input_price * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
               </span>
               <span v-else>-</span>
             </template>
             <template v-else-if="column.key === 'outputPrice'">
-              <span v-if="record.prices && (record.prices.outputPrice !== undefined || record.prices.output_price !== undefined)">
-                {{ (record.prices.output_price || record.prices.outputPrice).toFixed(4) }} 美元/M tokens
+              <span v-if="record.output_price !== undefined">
+                {{ record.output_price.toFixed(4) }} 美元/M tokens
                 <br>
-                <small>{{ ((record.prices.output_price || record.prices.outputPrice) * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
+                <small>{{ (record.output_price * (record.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
               </span>
               <span v-else>-</span>
             </template>
@@ -143,15 +143,6 @@
       @ok="saveModelPriceParams"
     >
       <a-form :model="modelPriceDialog.form" layout="vertical">
-        <a-form-item label="分组比例" name="groupRatio">
-          <a-input-number
-            v-model:value="modelPriceDialog.form.groupRatio"
-            placeholder="请输入分组比例"
-            style="width: 100%"
-            :min="0"
-            :step="0.01"
-          />
-        </a-form-item>
         <a-form-item label="模型比例" name="modelRatio">
           <a-input-number
             v-model:value="modelPriceDialog.form.modelRatio"
@@ -170,18 +161,18 @@
             :step="0.01"
           />
         </a-form-item>
-        <div class="price-preview" v-if="modelPriceDialog.form.groupRatio && modelPriceDialog.form.modelRatio && modelPriceDialog.form.completionRatio">
+        <div class="price-preview" v-if="modelPriceDialog.form.modelRatio && modelPriceDialog.form.completionRatio">
           <p>
             <strong>输入价格预览：</strong>
-            {{ (modelPriceDialog.form.groupRatio * modelPriceDialog.form.modelRatio * 2).toFixed(4) }} 美元/M tokens
+            {{ (modelPriceDialog.form.modelRatio * 2).toFixed(4) }} 美元/M tokens
             <br>
-            {{ (modelPriceDialog.form.groupRatio * modelPriceDialog.form.modelRatio * 2 * (modelPriceDialog.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens
+            <small>{{ (modelPriceDialog.form.modelRatio * 2 * (modelPriceDialog.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
           </p>
           <p>
             <strong>输出价格预览：</strong>
-            {{ (modelPriceDialog.form.groupRatio * modelPriceDialog.form.modelRatio * 2 * modelPriceDialog.form.completionRatio).toFixed(4) }} 美元/M tokens
+            {{ (modelPriceDialog.form.modelRatio * 2 * modelPriceDialog.form.completionRatio).toFixed(4) }} 美元/M tokens
             <br>
-            {{ (modelPriceDialog.form.groupRatio * modelPriceDialog.form.modelRatio * 2 * modelPriceDialog.form.completionRatio * (modelPriceDialog.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens
+            <small>{{ (modelPriceDialog.form.modelRatio * 2 * modelPriceDialog.form.completionRatio * (modelPriceDialog.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
           </p>
         </div>
       </a-form>
@@ -227,7 +218,6 @@ export default {
         proxyId: "",
         groupId: "",
         modelId: "",
-        groupRatio: null,
         modelRatio: null,
         completionRatio: null
       }
@@ -413,10 +403,10 @@ export default {
         
         filtered.sort((a, b) => {
           // 获取价格数据
-          const aInputPrice = a.prices ? (a.prices.input_price || a.prices.inputPrice || 0) : 0;
-          const bInputPrice = b.prices ? (b.prices.input_price || b.prices.inputPrice || 0) : 0;
-          const aOutputPrice = a.prices ? (a.prices.output_price || a.prices.outputPrice || 0) : 0;
-          const bOutputPrice = b.prices ? (b.prices.output_price || b.prices.outputPrice || 0) : 0;
+          const aInputPrice = a.input_price || 0;
+          const bInputPrice = b.input_price || 0;
+          const aOutputPrice = a.output_price || 0;
+          const bOutputPrice = b.output_price || 0;
           
           // 获取汇率
           const aExchangeRate = a.exchangeRate || 7.0;
@@ -511,24 +501,12 @@ export default {
 
     // 编辑模型价格参数
     const editModelPriceParams = (model) => {
-      // 获取当前价格参数
-      let groupRatio = null;
-      let modelRatio = null;
-      let completionRatio = null;
-      
-      if (model.prices) {
-        groupRatio = model.prices.group_ratio;
-        modelRatio = model.prices.model_ratio;
-        completionRatio = model.prices.completion_ratio;
-      }
-      
       modelPriceDialog.form = {
         proxyId: model.proxyId,
         groupId: model.groupId,
         modelId: model.id,
-        groupRatio,
-        modelRatio,
-        completionRatio
+        modelRatio: model.model_ratio || 1.0,
+        completionRatio: model.completion_ratio || 1.0
       };
       
       modelPriceDialog.exchangeRate = model.exchangeRate || 7.0;
@@ -538,43 +516,33 @@ export default {
     // 保存模型价格参数
     const saveModelPriceParams = async () => {
       try {
-        const { proxyId, groupId, modelId, groupRatio, modelRatio, completionRatio } = modelPriceDialog.form;
+        const { modelId, modelRatio, completionRatio } = modelPriceDialog.form;
         
-        if (!groupRatio || !modelRatio || !completionRatio) {
+        if (!modelRatio || !completionRatio) {
           message.error("请填写所有价格参数");
           return;
         }
         
-        const priceData = {
-          group_ratio: groupRatio,
+        if (modelRatio <= 0 || completionRatio <= 0) {
+          message.error("价格参数必须大于0");
+          return;
+        }
+        
+        await axios.put(`/api/models/${modelId}/price-params`, {
           model_ratio: modelRatio,
           completion_ratio: completionRatio
-        };
-        
-        await axios.put(`/api/models/${modelId}/price-params`, priceData);
+        });
         
         // 更新本地数据
-        const modelIndex = allModels.value.findIndex(
-          m => m.id === modelId && m.groupId === groupId
-        );
+        const modelIndex = allModels.value.findIndex(m => m.id === modelId);
         
         if (modelIndex !== -1) {
-          // 计算输入和输出价格
-          const inputPrice = groupRatio * modelRatio * 2;
-          const outputPrice = inputPrice * completionRatio;
+          const model = allModels.value[modelIndex];
+          model.model_ratio = modelRatio;
+          model.completion_ratio = completionRatio;
           
-          if (!allModels.value[modelIndex].prices) {
-            allModels.value[modelIndex].prices = {};
-          }
-          
-          // 更新价格参数
-          allModels.value[modelIndex].prices.group_ratio = groupRatio;
-          allModels.value[modelIndex].prices.model_ratio = modelRatio;
-          allModels.value[modelIndex].prices.completion_ratio = completionRatio;
-          
-          // 更新计算结果
-          allModels.value[modelIndex].prices.input_price = inputPrice;
-          allModels.value[modelIndex].prices.output_price = outputPrice;
+          // 更新价格（需要从后端获取group_ratio）
+          await fetchAllModels();
         }
         
         message.success("更新价格参数成功");

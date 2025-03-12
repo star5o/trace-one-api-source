@@ -3,6 +3,9 @@ const ModelController = require('../controllers/model.controller');
 
 const router = express.Router();
 
+// 获取分组的模型列表
+router.get('/groups/:groupId/models', ModelController.getByGroupId);
+
 // 更新模型信息
 router.put('/models/:id', ModelController.update);
 
