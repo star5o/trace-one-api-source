@@ -299,7 +299,16 @@ baseurl/api/pricing
             "限时特价-无审核": 0.2
         },
         "ModelFixedPrice": Object{...},
-        "ModelRatio": Object{...},
+        "ModelRatio": {
+            "360GPT_S2_V9": 0.8572,
+            "BLOOMZ-7B": 0.284,
+            "Baichuan2-53B": 1.42,
+            "Baichuan2-Turbo": 0.568,
+            "Baichuan2-Turbo-192k": 1.136,
+            "ChatPro": 7.1,
+            "ChatStd": 0.71,
+            ...
+        },
         "Models": [
 
             "claude-3-5-haiku-20241022",
@@ -318,3 +327,29 @@ baseurl/api/pricing
 
 ```
 CompletionRatio 为各个模型的补全倍率，GroupRatio 为各个分组的分组倍率，ModelRatio 为模型倍率，Models为模型列表
+
+通过 baseurl/api/user/available_models_by_groups 获取每个分组的可用模型
+```json
+{
+"data":{
+"groups":[
+{
+"convert_ratio":1.6666666666666667,
+"displayName":"Azure 4o-1120 无文本审核 [1:1]100%稳定",
+"group_ratio":1,
+"models":[
+"code-davinci-edit-001",
+"dall-e-2",
+"dall-e-3",
+"davinci-002",
+"gpt-3.5-turbo",
+...
+],
+"name":"vip_100",
+"topup_group_ratio":1
+},
+...],
+"success":true
+}
+```
+name为分组名称，displayName为显示名称，models为可用模型列表，group_ratio为分组倍率

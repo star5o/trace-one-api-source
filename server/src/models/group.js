@@ -625,6 +625,93 @@ class GroupModel {
             success = Object.keys(modelPrices).length > 0;
             if (success) break; // 如果成功解析到数据，就不处理后续响应
           }
+          // 处理 shell-api 格式
+          else if (response.data && response.data.data && response.data.data.CompletionRatio && response.data.data.GroupRatio && response.data.data.ModelRatio && response.data.data.Models) {
+            const completionRatios = response.data.data.CompletionRatio;
+            const groupRatios = response.data.data.GroupRatio;
+            const modelRatios = response.data.data.ModelRatio;
+            const modelsList = response.data.data.Models;
+            
+            // 尝试获取可用的模型分组信息
+            let availableModelsByGroups = {};
+            try {
+              const availableModelsResponse = await axios.get(`${proxy.baseUrl}/api/user/available_models_by_groups`, {
+                timeout: 5000,
+                headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
+              });
+              
+              if (availableModelsResponse.data && availableModelsResponse.data.data && availableModelsResponse.data.data.groups) {
+                const groupsData = availableModelsResponse.data.data.groups;
+                
+                for (const group of groupsData) {
+                  if (group.name && group.models) {
+                    availableModelsByGroups[group.name] = {
+                      models: group.models,
+                      displayName: group.displayName || group.name,
+                      group_ratio: group.group_ratio || groupRatios[group.name] || 1.0
+                    };
+                  }
+                }
+              }
+            } catch (error) {
+              console.log('获取可用模型分组信息失败:', error.message);
+            }
+            
+            // 如果没有获取到可用模型分组信息，则使用 GroupRatio 中的分组
+            if (Object.keys(availableModelsByGroups).length === 0) {
+              for (const [groupKey, groupRatio] of Object.entries(groupRatios)) {
+                availableModelsByGroups[groupKey] = {
+                  models: modelsList, // 假设所有模型都可用于此分组
+                  displayName: groupKey,
+                  group_ratio: groupRatio
+                };
+              }
+            }
+            
+            // 处理每个分组
+            for (const [groupKey, groupInfo] of Object.entries(availableModelsByGroups)) {
+              const groupRatio = groupInfo.group_ratio;
+              const groupModels = groupInfo.models;
+              
+              // 处理分组中的每个模型
+              for (const modelName of groupModels) {
+                if (modelRatios[modelName] !== undefined && completionRatios[modelName] !== undefined) {
+                  const modelRatio = modelRatios[modelName];
+                  const completionRatio = completionRatios[modelName];
+                  
+                  // 计算价格
+                  const inputPrice = groupRatio * modelRatio * 2;
+                  const outputPrice = inputPrice * completionRatio;
+                  
+                  if (!modelPrices[groupKey]) {
+                    modelPrices[groupKey] = {};
+                  }
+                  
+                  modelPrices[groupKey][modelName] = {
+                    inputPrice,
+                    outputPrice,
+                    modelRatio,
+                    groupRatio,
+                    completionRatio
+                  };
+                  
+                  // 将模型和价格信息保存到数据库
+                  const modelData = {
+                    model_name: modelName,
+                    model_ratio: modelRatio,
+                    completion_ratio: completionRatio,
+                    group_ratio: groupRatio,
+                    input_price: inputPrice,
+                    output_price: outputPrice
+                  };
+                  await this.saveModelToDatabase(groups, groupKey, modelName, modelData);
+                }
+              }
+            }
+            
+            success = Object.keys(modelPrices).length > 0;
+            if (success) break; // 如果成功解析到数据，就不处理后续响应
+          }
         }
       } catch (error) {
         console.log('尝试获取模型价格失败:', error.message);
@@ -930,6 +1017,92 @@ class GroupModel {
                         group_ratio: combinedPrice
                       });
                     }
+                  }
+                }
+              }
+            }
+
+            success = groups.length > 0;
+            if (success) break;
+          }
+          // 处理 shell-api 格式
+          else if (response.data && response.data.data && response.data.data.CompletionRatio && response.data.data.GroupRatio && response.data.data.ModelRatio && response.data.data.Models) {
+            const completionRatios = response.data.data.CompletionRatio;
+            const groupRatios = response.data.data.GroupRatio;
+            const modelRatios = response.data.data.ModelRatio;
+            const modelsList = response.data.data.Models;
+
+            // 尝试获取可用的模型分组信息
+            let availableModelsByGroups = {};
+            try {
+              const availableModelsResponse = await axios.get(`${proxy.baseUrl}/api/user/available_models_by_groups`, {
+                timeout: 5000,
+                headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
+              });
+
+              if (availableModelsResponse.data && availableModelsResponse.data.data && availableModelsResponse.data.data.groups) {
+                const groupsData = availableModelsResponse.data.data.groups;
+
+                for (const group of groupsData) {
+                  if (group.name && group.models) {
+                    availableModelsByGroups[group.name] = {
+                      models: group.models,
+                      displayName: group.displayName || group.name,
+                      group_ratio: group.group_ratio || groupRatios[group.name] || 1.0
+                    };
+                  }
+                }
+              }
+            } catch (error) {
+              console.log('获取可用模型分组信息失败:', error.message);
+            }
+
+            // 如果没有获取到可用模型分组信息，则使用 GroupRatio 中的分组
+            if (Object.keys(availableModelsByGroups).length === 0) {
+              for (const [groupKey, groupRatio] of Object.entries(groupRatios)) {
+                availableModelsByGroups[groupKey] = {
+                  models: modelsList, // 假设所有模型都可用于此分组
+                  displayName: groupKey,
+                  group_ratio: groupRatio
+                };
+              }
+            }
+
+            // 处理每个分组
+            for (const [groupKey, groupInfo] of Object.entries(availableModelsByGroups)) {
+              const groupRatio = groupInfo.group_ratio;
+              const groupModels = groupInfo.models;
+
+              // 处理分组中的每个模型
+              for (const modelName of groupModels) {
+                if (modelRatios[modelName] !== undefined && completionRatios[modelName] !== undefined) {
+                  const modelRatio = modelRatios[modelName];
+                  const completionRatio = completionRatios[modelName];
+
+                  // 计算价格
+                  const inputPrice = groupRatio * modelRatio * 2;
+                  const outputPrice = inputPrice * completionRatio;
+
+                  if (!modelPrices[groupKey]) {
+                    modelPrices[groupKey] = {};
+                  }
+
+                  modelPrices[groupKey][modelName] = {
+                    inputPrice,
+                    outputPrice,
+                    modelRatio,
+                    groupRatio,
+                    completionRatio
+                  };
+
+                  // 如果是新的分组，添加到分组列表
+                  if (!groups.find(g => g.key === groupKey)) {
+                    groups.push({
+                      name: groupKey,
+                      desc: '',
+                      key: groupKey,
+                      group_ratio: groupRatio
+                    });
                   }
                 }
               }
