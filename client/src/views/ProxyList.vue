@@ -898,37 +898,28 @@ export default {
     // 为操作列中的按钮提供的方法，接收代理记录作为参数
     const fetchGroupsAndPricesForProxy = async (proxy) => {
       try {
-        message.loading({ content: "正在获取数据...", key: "fetchData" });
+        message.info("正在一键获取分组、模型和价格，请稍候...");
+        fetchingPrices.value = true;
         
-        const response = await axios.post(`/api/proxies/${proxy.id}/fetch-groups-and-prices`);
-        const updatedProxy = response.data;
+        // 调用合并后的API，一次性获取分组和价格信息
+        const response = await apiClient.post(`/proxies/${proxy.id}/fetch-groups-and-prices`);
         
-        // 计算分组和模型数量的变化
-        const oldGroupCount = proxy.groups?.length || 0;
-        const newGroupCount = updatedProxy.groups?.length || 0;
-        const groupsAdded = newGroupCount - oldGroupCount;
+        // 更新中转站列表
+        await fetchProxyList();
         
-        // 计算模型数量
-        const oldModelCount = proxy.groups?.reduce((total, group) => total + (group.models?.length || 0), 0) || 0;
-        const newModelCount = updatedProxy.groups?.reduce((total, group) => total + (group.models?.length || 0), 0) || 0;
-        const modelsAdded = newModelCount - oldModelCount;
-        
-        // 更新本地数据
-        const index = proxyList.value.findIndex(p => p.id === proxy.id);
-        if (index !== -1) {
-          proxyList.value[index] = updatedProxy;
-          if (currentProxy.value && currentProxy.value.id === proxy.id) {
-            currentProxy.value = updatedProxy;
-          }
+        // 如果当前正在查看该代理的详情，更新详情信息
+        if (currentProxy.value && currentProxy.value.id === proxy.id) {
+          const detailResponse = await apiClient.get(`/proxies/${proxy.id}`);
+          currentProxy.value = detailResponse.data;
         }
         
-        message.success({ 
-          content: `一键获取成功！${groupsAdded > 0 ? `新增 ${groupsAdded} 个分组，` : ''}${modelsAdded > 0 ? `新增 ${modelsAdded} 个模型，` : ''}已更新所有价格信息`, 
-          key: "fetchData" 
-        });
+        const groupsAdded = response.data?.groupsAdded || 0;
+        message.success(`一键获取成功！新增 ${groupsAdded} 个分组，并获取了模型和价格信息`);
       } catch (error) {
-        console.error("获取数据失败:", error);
-        message.error({ content: "获取数据失败: " + (error.response?.data?.message || error.message || "未知错误"), key: "fetchData" });
+        console.error("一键获取分组、模型和价格失败:", error);
+        message.error("一键获取分组、模型和价格失败");
+      } finally {
+        fetchingPrices.value = false;
       }
     };
 

@@ -21,4 +21,7 @@ router.delete('/proxies/:id', ProxyController.delete);
 // 清空中转站的分组和模型
 router.delete('/proxies/:id/groups-and-models', ProxyController.clearGroupsAndModels);
 
+// 一键获取分组、模型和价格
+router.post('/proxies/:id/fetch-groups-and-prices', ProxyController.fetchGroupsAndPrices);
+
 module.exports = router;

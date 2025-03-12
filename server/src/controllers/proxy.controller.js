@@ -1,4 +1,5 @@
 const ProxyModel = require('../models/proxy');
+const GroupModel = require('../models/group'); // 添加 GroupModel 引用
 
 class ProxyController {
   // 创建中转站
@@ -109,6 +110,44 @@ class ProxyController {
       }
       
       res.status(500).json({ message: '清空分组和模型失败', error: error.message });
+    }
+  }
+  
+  // 一键获取分组、模型和价格
+  static async fetchGroupsAndPrices(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // 获取中转站信息
+      const proxy = await ProxyModel.getById(id);
+      
+      // 获取当前分组数量
+      const currentGroups = proxy.groups || [];
+      const currentGroupCount = currentGroups.length;
+      
+      // 调用 GroupModel 的 fetchGroupsAndPrices 方法
+      const result = await GroupModel.fetchGroupsAndPrices(id);
+      
+      // 获取更新后的中转站信息
+      const updatedProxy = await ProxyModel.getById(id);
+      const updatedGroups = updatedProxy.groups || [];
+      
+      // 计算新增的分组数量
+      const groupsAdded = updatedGroups.length - currentGroupCount;
+      
+      // 返回更新后的中转站信息和新增分组数量
+      res.json({
+        ...updatedProxy,
+        groupsAdded
+      });
+    } catch (error) {
+      console.error('获取分组和价格信息失败:', error);
+      
+      if (error.message === '中转站不存在') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      res.status(500).json({ message: '获取分组和价格信息失败', error: error.message });
     }
   }
 }
