@@ -152,9 +152,6 @@
                             <br>
                             <small>{{ (record.input_price * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
                           </span>
-                          <span v-else-if="record.model_ratio !== undefined && currentProxy.groups">
-                            <span v-html="calculateModelInputPrice(record, findGroupById(currentProxy.groups, record.groupId))"></span>
-                          </span>
                           <span v-else>-</span>
                         </template>
                         <template v-else-if="column.key === 'outputPrice'">
@@ -162,9 +159,6 @@
                             {{ record.output_price.toFixed(4) }} 美元/M tokens
                             <br>
                             <small>{{ (record.output_price * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
-                          </span>
-                          <span v-else-if="record.model_ratio !== undefined && record.completion_ratio !== undefined && currentProxy.groups">
-                            <span v-html="calculateModelOutputPrice(record, findGroupById(currentProxy.groups, record.groupId))"></span>
                           </span>
                           <span v-else>-</span>
                         </template>
@@ -1126,35 +1120,6 @@ export default {
     // 价格获取状态
     const fetchingPrices = ref(false);
     
-    // 根据ID查找分组
-    const findGroupById = (groups, groupId) => {
-      if (!groups || !Array.isArray(groups)) return null;
-      return groups.find(g => g.id === groupId) || null;
-    };
-    
-    // 计算模型列表中的输入价格
-    const calculateModelInputPrice = (model, group) => {
-      if (!model || !group || model.model_ratio === undefined || group.group_ratio === undefined) {
-        return "-";
-      }
-      const inputPrice = group.group_ratio * model.model_ratio * 2;
-      return `${inputPrice.toFixed(4)} 美元/M tokens
-              <br>
-              <small>${(inputPrice * (currentProxy.value.exchangeRate || 7.0)).toFixed(4)} 人民币/M tokens</small>`;
-    };
-    
-    // 计算模型列表中的输出价格
-    const calculateModelOutputPrice = (model, group) => {
-      if (!model || !group || model.model_ratio === undefined || model.completion_ratio === undefined || group.group_ratio === undefined) {
-        return "-";
-      }
-      const inputPrice = group.group_ratio * model.model_ratio * 2;
-      const outputPrice = inputPrice * model.completion_ratio;
-      return `${outputPrice.toFixed(4)} 美元/M tokens
-              <br>
-              <small>${(outputPrice * (currentProxy.value.exchangeRate || 7.0)).toFixed(4)} 人民币/M tokens</small>`;
-    };
-    
     // 更新模型逆向状态
     const updateReverseStatus = async (proxy, group, model, isReverse) => {
       try {
@@ -1297,8 +1262,6 @@ export default {
       calculateOutputPrice,
       editModelPriceParams,
       submitPriceParamsForm,
-      calculateModelInputPrice,
-      calculateModelOutputPrice,
     };
   },
 };

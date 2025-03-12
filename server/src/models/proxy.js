@@ -115,27 +115,38 @@ class ProxyModel {
                       if (model.price_data) {
                         try {
                           const priceData = JSON.parse(model.price_data);
+                          model.prices = priceData;
+                          
+                          // 设置模型的倍率字段
+                          model.model_ratio = model.model_ratio || priceData.model_ratio;
+                          model.completion_ratio = model.completion_ratio || priceData.completion_ratio;
                           
                           // 计算输入和输出价格
-                          if (priceData.group_ratio !== undefined && priceData.model_ratio !== undefined && priceData.completion_ratio !== undefined) {
-                            const inputPrice = priceData.group_ratio * priceData.model_ratio * 2;
-                            const outputPrice = inputPrice * priceData.completion_ratio;
-                            
-                            // 保存价格信息到模型对象
-                            model.prices = {
-                              ...priceData,
-                              inputPrice,
-                              outputPrice
-                            };
-                            
-                            // 为了兼容性，同时保存下划线格式的字段名
-                            model.input_price = inputPrice;
-                            model.output_price = outputPrice;
-                          } else {
-                            model.prices = priceData;
-                          }
+                          const groupRatio = group.group_ratio || 1.0;
+                          const modelRatio = model.model_ratio || 1.0;
+                          const completionRatio = model.completion_ratio || 1.0;
+                          
+                          const inputPrice = groupRatio * modelRatio * 2;
+                          const outputPrice = inputPrice * completionRatio;
+                          
+                          // 设置价格字段
+                          model.input_price = inputPrice;
+                          model.output_price = outputPrice;
                         } catch (e) {
                           console.error('解析价格数据失败:', e);
+                        }
+                      } else {
+                        // 如果没有价格数据，尝试使用模型自身的倍率字段计算价格
+                        if (model.model_ratio && group.group_ratio) {
+                          const groupRatio = group.group_ratio || 1.0;
+                          const modelRatio = model.model_ratio || 1.0;
+                          const completionRatio = model.completion_ratio || 1.0;
+                          
+                          const inputPrice = groupRatio * modelRatio * 2;
+                          const outputPrice = inputPrice * completionRatio;
+                          
+                          model.input_price = inputPrice;
+                          model.output_price = outputPrice;
                         }
                       }
                     });
@@ -274,27 +285,38 @@ class ProxyModel {
                         if (model.price_data) {
                           try {
                             const priceData = JSON.parse(model.price_data);
+                            model.prices = priceData;
+                            
+                            // 设置模型的倍率字段
+                            model.model_ratio = model.model_ratio || priceData.model_ratio;
+                            model.completion_ratio = model.completion_ratio || priceData.completion_ratio;
                             
                             // 计算输入和输出价格
-                            if (priceData.group_ratio !== undefined && priceData.model_ratio !== undefined && priceData.completion_ratio !== undefined) {
-                              const inputPrice = priceData.group_ratio * priceData.model_ratio * 2;
-                              const outputPrice = inputPrice * priceData.completion_ratio;
-                              
-                              // 保存价格信息到模型对象
-                              model.prices = {
-                                ...priceData,
-                                inputPrice,
-                                outputPrice
-                              };
-                              
-                              // 为了兼容性，同时保存下划线格式的字段名
-                              model.input_price = inputPrice;
-                              model.output_price = outputPrice;
-                            } else {
-                              model.prices = priceData;
-                            }
+                            const groupRatio = group.group_ratio || 1.0;
+                            const modelRatio = model.model_ratio || 1.0;
+                            const completionRatio = model.completion_ratio || 1.0;
+                            
+                            const inputPrice = groupRatio * modelRatio * 2;
+                            const outputPrice = inputPrice * completionRatio;
+                            
+                            // 设置价格字段
+                            model.input_price = inputPrice;
+                            model.output_price = outputPrice;
                           } catch (e) {
                             console.error('解析价格数据失败:', e);
+                          }
+                        } else {
+                          // 如果没有价格数据，尝试使用模型自身的倍率字段计算价格
+                          if (model.model_ratio && group.group_ratio) {
+                            const groupRatio = group.group_ratio || 1.0;
+                            const modelRatio = model.model_ratio || 1.0;
+                            const completionRatio = model.completion_ratio || 1.0;
+                            
+                            const inputPrice = groupRatio * modelRatio * 2;
+                            const outputPrice = inputPrice * completionRatio;
+                            
+                            model.input_price = inputPrice;
+                            model.output_price = outputPrice;
                           }
                         }
                       });
