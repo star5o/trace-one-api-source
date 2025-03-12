@@ -723,6 +723,360 @@ class GroupModel {
       // 这里我们不抛出错误，因为我们不希望因为保存模型失败而中断整个价格获取过程
     }
   }
+
+  // 获取分组和价格信息
+  static async fetchGroupsAndPrices(proxyId) {
+    try {
+      // 获取中转站信息
+      const proxy = await new Promise((resolve, reject) => {
+        db.get('SELECT * FROM proxies WHERE id = ?', [proxyId], (err, proxy) => {
+          if (err) {
+            reject(err);
+          } else if (!proxy) {
+            reject(new Error('中转站不存在'));
+          } else {
+            resolve(proxy);
+          }
+        });
+      });
+
+      // 尝试不同的API路径获取分组和价格信息
+      let groups = [];
+      let modelPrices = {};
+      let success = false;
+
+      try {
+        // 尝试不同的API路径
+        let apiResponses = [];
+
+        // 尝试 /api/pricing 路径
+        try {
+          const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
+            timeout: 5000,
+            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
+          });
+          apiResponses.push(pricingResponse);
+        } catch (error) {
+          console.log('尝试 /api/pricing 路径失败:', error.message);
+        }
+
+        // 尝试 /api/models/price 路径
+        try {
+          const modelsPriceResponse = await axios.get(`${proxy.baseUrl}/api/models/price`, {
+            timeout: 5000,
+            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
+          });
+          apiResponses.push(modelsPriceResponse);
+        } catch (error) {
+          console.log('尝试 /api/models/price 路径失败:', error.message);
+        }
+
+        // 处理所有响应
+        for (const response of apiResponses) {
+          // 处理 new-api 格式
+          if (response.data && Array.isArray(response.data.data) && response.data.group_ratio) {
+            const models = response.data.data;
+            const groupRatios = response.data.group_ratio;
+            const usableGroups = response.data.usable_group || {};
+
+            // 处理分组信息
+            for (const [key, value] of Object.entries(usableGroups)) {
+              groups.push({
+                name: key,
+                desc: value,
+                key: key,
+                group_ratio: groupRatios[key] || 1.0
+              });
+            }
+
+            // 处理每个模型
+            for (const model of models) {
+              if (model.model_name && model.model_ratio && model.completion_ratio && model.enable_groups) {
+                const modelName = model.model_name;
+                const modelRatio = model.model_ratio;
+                const completionRatio = model.completion_ratio;
+
+                // 为每个分组计算价格
+                for (const groupKey of model.enable_groups) {
+                  if (groupRatios[groupKey]) {
+                    const groupRatio = groupRatios[groupKey];
+
+                    // 计算价格
+                    const inputPrice = groupRatio * modelRatio * 2;
+                    const outputPrice = inputPrice * completionRatio;
+
+                    if (!modelPrices[groupKey]) {
+                      modelPrices[groupKey] = {};
+                    }
+
+                    modelPrices[groupKey][modelName] = {
+                      inputPrice,
+                      outputPrice,
+                      modelRatio,
+                      groupRatio,
+                      completionRatio
+                    };
+                  }
+                }
+              }
+            }
+
+            success = groups.length > 0;
+            if (success) break;
+          }
+          // 处理 Rix-api 格式
+          else if (response.data && response.data.data && response.data.data.model_group && response.data.data.model_completion_ratio) {
+            const modelGroups = response.data.data.model_group;
+            const modelCompletionRatios = response.data.data.model_completion_ratio;
+            const groupSpecial = response.data.data.group_special || {};
+
+            // 处理分组信息
+            for (const [key, groupInfo] of Object.entries(modelGroups)) {
+              groups.push({
+                name: key,
+                desc: groupInfo.Description || groupInfo.DisplayName || '',
+                key: key,
+                group_ratio: groupInfo.GroupRatio || 1.0
+              });
+
+              // 处理分组中的每个模型
+              if (groupInfo.GroupRatio && groupInfo.ModelPrice) {
+                const groupRatio = groupInfo.GroupRatio;
+
+                for (const [modelName, modelInfo] of Object.entries(groupInfo.ModelPrice)) {
+                  if (modelInfo.price !== undefined) {
+                    const modelRatio = modelInfo.price;
+                    const completionRatio = modelCompletionRatios[modelName] || 1;
+
+                    // 检查模型是否在当前分组的特殊列表中
+                    const isSpecialModel = groupSpecial[modelName] && groupSpecial[modelName].includes(key);
+
+                    // 如果模型不在特殊列表中且特殊列表存在，则跳过
+                    if (groupSpecial[modelName] && !isSpecialModel) {
+                      continue;
+                    }
+
+                    // 计算价格
+                    const inputPrice = groupRatio * modelRatio * 2;
+                    const outputPrice = inputPrice * completionRatio;
+
+                    if (!modelPrices[key]) {
+                      modelPrices[key] = {};
+                    }
+
+                    modelPrices[key][modelName] = {
+                      inputPrice,
+                      outputPrice,
+                      modelRatio,
+                      groupRatio,
+                      completionRatio
+                    };
+                  }
+                }
+              }
+            }
+
+            success = groups.length > 0;
+            if (success) break;
+          }
+          // 处理 VoAPI 格式
+          else if (response.data && response.data.data && response.data.data.models) {
+            const models = response.data.data.models;
+
+            // 先创建默认分组
+            groups.push({
+              name: 'default',
+              desc: '默认分组',
+              key: 'default',
+              group_ratio: 1.0
+            });
+
+            for (const model of models) {
+              if (model.key && model.group_price && model.completion_ratio) {
+                const modelName = model.key;
+                const completionRatio = model.completion_ratio;
+
+                // 处理每个分组的价格
+                for (const [groupKey, priceInfo] of Object.entries(model.group_price)) {
+                  if (priceInfo.price !== undefined) {
+                    // 在VoAPI中，price已经是分组倍率 × 模型倍率的结果
+                    const combinedPrice = priceInfo.price;
+
+                    // 计算价格
+                    const inputPrice = combinedPrice * 2;
+                    const outputPrice = inputPrice * completionRatio;
+
+                    if (!modelPrices[groupKey]) {
+                      modelPrices[groupKey] = {};
+                    }
+
+                    modelPrices[groupKey][modelName] = {
+                      inputPrice,
+                      outputPrice,
+                      modelRatio: 1.0, // 默认设置为1
+                      groupRatio: combinedPrice,
+                      completionRatio
+                    };
+
+                    // 如果是新的分组，添加到分组列表
+                    if (!groups.find(g => g.key === groupKey)) {
+                      groups.push({
+                        name: groupKey,
+                        desc: '',
+                        key: groupKey,
+                        group_ratio: combinedPrice
+                      });
+                    }
+                  }
+                }
+              }
+            }
+
+            success = groups.length > 0;
+            if (success) break;
+          }
+        }
+      } catch (error) {
+        console.log('尝试获取分组和价格信息失败:', error.message);
+      }
+
+      if (!success) {
+        throw new Error('无法获取分组和价格信息');
+      }
+
+      // 开始事务
+      await new Promise((resolve, reject) => {
+        db.run('BEGIN TRANSACTION', (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      try {
+        const now = Date.now();
+        const createdGroups = [];
+
+        // 插入或更新分组
+        for (const group of groups) {
+          // 检查分组是否已存在
+          const existingGroup = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM groups WHERE proxyId = ? AND name = ?', [proxyId, group.name], (err, row) => {
+              if (err) reject(err);
+              else resolve(row);
+            });
+          });
+
+          let groupId;
+          if (!existingGroup) {
+            groupId = uuidv4();
+            await new Promise((resolve, reject) => {
+              db.run(
+                'INSERT INTO groups (id, proxyId, name, key, remark, group_ratio, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [groupId, proxyId, group.name, group.key, group.desc, group.group_ratio, now, now],
+                (err) => {
+                  if (err) reject(err);
+                  else resolve();
+                }
+              );
+            });
+
+            createdGroups.push({
+              id: groupId,
+              proxyId,
+              name: group.name,
+              key: group.key,
+              remark: group.desc,
+              group_ratio: group.group_ratio,
+              createdAt: now,
+              updatedAt: now
+            });
+          } else {
+            groupId = existingGroup.id;
+            // 更新现有分组的倍率和备注
+            await new Promise((resolve, reject) => {
+              db.run(
+                'UPDATE groups SET group_ratio = ?, remark = ?, updatedAt = ? WHERE id = ?',
+                [group.group_ratio, group.desc, now, groupId],
+                (err) => {
+                  if (err) reject(err);
+                  else resolve();
+                }
+              );
+            });
+          }
+
+          // 处理该分组下的所有模型
+          if (modelPrices[group.key]) {
+            for (const [modelName, priceInfo] of Object.entries(modelPrices[group.key])) {
+              const modelId = modelName;
+
+              // 检查模型是否已存在
+              const existingModel = await new Promise((resolve, reject) => {
+                db.get('SELECT * FROM models WHERE groupId = ? AND id = ?', [groupId, modelId], (err, model) => {
+                  if (err) reject(err);
+                  else resolve(model);
+                });
+              });
+
+              const modelData = {
+                model_ratio: priceInfo.modelRatio,
+                completion_ratio: priceInfo.completionRatio,
+                raw_data: JSON.stringify({
+                  input_price: priceInfo.inputPrice,
+                  output_price: priceInfo.outputPrice,
+                  ...priceInfo
+                })
+              };
+
+              if (existingModel) {
+                // 更新现有模型
+                await new Promise((resolve, reject) => {
+                  db.run(
+                    'UPDATE models SET model_ratio = ?, completion_ratio = ?, raw_data = ?, updatedAt = ? WHERE groupId = ? AND id = ?',
+                    [modelData.model_ratio, modelData.completion_ratio, modelData.raw_data, now, groupId, modelId],
+                    (err) => {
+                      if (err) reject(err);
+                      else resolve();
+                    }
+                  );
+                });
+              } else {
+                // 创建新模型
+                await new Promise((resolve, reject) => {
+                  db.run(
+                    'INSERT INTO models (id, groupId, model_ratio, completion_ratio, raw_data, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    [modelId, groupId, modelData.model_ratio, modelData.completion_ratio, modelData.raw_data, now, now],
+                    (err) => {
+                      if (err) reject(err);
+                      else resolve();
+                    }
+                  );
+                });
+              }
+            }
+          }
+        }
+
+        // 提交事务
+        await new Promise((resolve, reject) => {
+          db.run('COMMIT', (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+
+        return { success: true, count: createdGroups.length, groups: createdGroups };
+      } catch (error) {
+        // 回滚事务
+        await new Promise((resolve) => {
+          db.run('ROLLBACK', () => resolve());
+        });
+        throw error;
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = GroupModel;

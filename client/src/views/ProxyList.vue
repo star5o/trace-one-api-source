@@ -914,16 +914,8 @@ export default {
         message.info("正在一键获取分组、模型和价格，请稍候...");
         fetchingPrices.value = true;
         
-        // 第一步：获取分组
-        const response = await apiClient.post(`/proxies/${proxy.id}/auto-fetch-groups`);
-        
-        let groupsAdded = 0;
-        if (response.data && response.data.success) {
-          groupsAdded = response.data.count || 0;
-        }
-        
-        // 第二步：获取所有模型价格（包含模型列表）
-        const priceResponse = await apiClient.get(`/proxies/${proxy.id}/model-prices`);
+        // 调用合并后的API，一次性获取分组和价格信息
+        const response = await apiClient.post(`/proxies/${proxy.id}/fetch-groups-and-prices`);
         
         // 更新中转站列表
         await fetchProxyList();
@@ -934,6 +926,7 @@ export default {
           currentProxy.value = detailResponse.data;
         }
         
+        const groupsAdded = response.data?.groupsAdded || 0;
         message.success(`一键获取成功！新增 ${groupsAdded} 个分组，并获取了模型和价格信息`);
       } catch (error) {
         console.error("一键获取分组、模型和价格失败:", error);

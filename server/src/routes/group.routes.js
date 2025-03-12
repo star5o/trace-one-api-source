@@ -21,10 +21,7 @@ router.delete('/groups/:id', GroupController.delete);
 // 刷新分组的模型列表
 router.post('/groups/:id/refresh-models', GroupController.refreshModels);
 
-// 自动获取分组
-router.post('/proxies/:proxyId/auto-fetch-groups', GroupController.autoFetchGroups);
-
-// 获取模型价格信息
-router.get('/proxies/:proxyId/model-prices', GroupController.fetchModelPrices);
+// 获取分组和价格信息
+router.post('/proxies/:proxyId/fetch-groups-and-prices', GroupController.fetchGroupsAndPrices);
 
 module.exports = router;

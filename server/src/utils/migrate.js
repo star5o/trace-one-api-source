@@ -256,34 +256,49 @@ const rebuildTracesTable = async (oldTraces) => {
   });
 };
 
-
+// 迁移倍率字段
+const migrateRatiosFields = async () => {
+  try {
+    // 在 groups 表中添加 group_ratio 字段
+    await addColumnIfNotExists('groups', 'group_ratio', 'REAL DEFAULT 1.0');
+    
+    // 在 models 表中添加 model_ratio 和 completion_ratio 字段
+    await addColumnIfNotExists('models', 'model_ratio', 'REAL DEFAULT 1.0');
+    await addColumnIfNotExists('models', 'completion_ratio', 'REAL DEFAULT 1.0');
+    
+    console.log('倍率字段迁移完成');
+    return true;
+  } catch (error) {
+    console.error('倍率字段迁移失败:', error);
+    throw error;
+  }
+};
 
 // 迁移数据库
 const migrateDatabase = async () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      console.log('开始数据库迁移...');
-      
-      // 迁移groups表
-      await addColumnIfNotExists('groups', 'remark', 'TEXT');
-      
-      // 迁移models表
-      await migrateModelsTable();
-      
-      // 迁移proxies表
-      await addColumnIfNotExists('proxies', 'exchangeRate', 'REAL DEFAULT 7.0');
-      await migrateProxiesTable();
-      
-      // 迁移traces表
-      await migrateTracesTable();
-      
-      console.log('数据库迁移全部完成');
-      resolve();
-    } catch (error) {
-      console.error('数据库迁移失败:', error);
-      reject(error);
-    }
-  });
+  try {
+    console.log('开始数据库迁移...');
+    
+    // 迁移groups表
+    await addColumnIfNotExists('groups', 'remark', 'TEXT');
+    
+    // 迁移models表
+    await migrateModelsTable();
+    
+    // 迁移proxies表
+    await addColumnIfNotExists('proxies', 'exchangeRate', 'REAL DEFAULT 7.0');
+    await migrateProxiesTable();
+    
+    // 迁移traces表
+    await migrateTracesTable();
+    
+    // 迁移倍率字段
+    await migrateRatiosFields();
+    
+    console.log('数据库迁移全部完成');
+  } catch (error) {
+    console.error('数据库迁移失败:', error);
+  }
 };
 
 module.exports = {

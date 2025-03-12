@@ -104,37 +104,20 @@ class GroupController {
     }
   }
 
-  // 自动获取分组
-  static async autoFetchGroups(req, res) {
+  // 获取分组和价格信息
+  static async fetchGroupsAndPrices(req, res) {
     try {
       const { proxyId } = req.params;
-      const result = await GroupModel.autoFetchGroups(proxyId);
+      const result = await GroupModel.fetchGroupsAndPrices(proxyId);
       res.json(result);
     } catch (error) {
-      console.error('自动获取分组失败:', error);
+      console.error('获取分组和价格信息失败:', error);
       
-      if (error.message === '中转站不存在' || error.message === '无法获取分组信息') {
+      if (error.message === '中转站不存在' || error.message === '无法获取分组和价格信息') {
         return res.status(404).json({ message: error.message });
       }
       
-      res.status(500).json({ message: '自动获取分组失败', error: error.message });
-    }
-  }
-
-  // 获取模型价格信息
-  static async fetchModelPrices(req, res) {
-    try {
-      const { proxyId } = req.params;
-      const result = await GroupModel.fetchModelPrices(proxyId);
-      res.json(result);
-    } catch (error) {
-      console.error('获取模型价格失败:', error);
-      
-      if (error.message === '中转站不存在' || error.message === '无法获取模型价格信息') {
-        return res.status(404).json({ message: error.message });
-      }
-      
-      res.status(500).json({ message: '获取模型价格失败', error: error.message });
+      res.status(500).json({ message: '获取分组和价格信息失败', error: error.message });
     }
   }
 }
