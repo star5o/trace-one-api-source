@@ -153,7 +153,7 @@
                             <small>{{ (record.input_price * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
                           </span>
                           <span v-else-if="record.model_ratio !== undefined && currentProxy.groups">
-                            {{ calculateInputPrice(record, findGroupById(currentProxy.groups, record.groupId)) }}
+                            <span v-html="calculateModelInputPrice(record, findGroupById(currentProxy.groups, record.groupId))"></span>
                           </span>
                           <span v-else>-</span>
                         </template>
@@ -164,7 +164,7 @@
                             <small>{{ (record.output_price * (currentProxy.exchangeRate || 7.0)).toFixed(4) }} 人民币/M tokens</small>
                           </span>
                           <span v-else-if="record.model_ratio !== undefined && record.completion_ratio !== undefined && currentProxy.groups">
-                            {{ calculateOutputPrice(record, findGroupById(currentProxy.groups, record.groupId)) }}
+                            <span v-html="calculateModelOutputPrice(record, findGroupById(currentProxy.groups, record.groupId))"></span>
                           </span>
                           <span v-else>-</span>
                         </template>
@@ -1132,8 +1132,8 @@ export default {
       return groups.find(g => g.id === groupId) || null;
     };
     
-    // 计算输入价格
-    const calculateInputPrice = (model, group) => {
+    // 计算模型列表中的输入价格
+    const calculateModelInputPrice = (model, group) => {
       if (!model || !group || model.model_ratio === undefined || group.group_ratio === undefined) {
         return "-";
       }
@@ -1143,8 +1143,8 @@ export default {
               <small>${(inputPrice * (currentProxy.value.exchangeRate || 7.0)).toFixed(4)} 人民币/M tokens</small>`;
     };
     
-    // 计算输出价格
-    const calculateOutputPrice = (model, group) => {
+    // 计算模型列表中的输出价格
+    const calculateModelOutputPrice = (model, group) => {
       if (!model || !group || model.model_ratio === undefined || model.completion_ratio === undefined || group.group_ratio === undefined) {
         return "-";
       }
@@ -1297,6 +1297,8 @@ export default {
       calculateOutputPrice,
       editModelPriceParams,
       submitPriceParamsForm,
+      calculateModelInputPrice,
+      calculateModelOutputPrice,
     };
   },
 };
