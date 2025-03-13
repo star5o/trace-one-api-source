@@ -508,6 +508,16 @@ class GroupModel {
                       completion_ratio: completionRatio
                     };
                     await this.saveModelToDatabase(groups, groupKey, modelName, modelWithPrices);
+                    
+                    // 如果分组不存在于 groups 中，则添加
+                    if (!groups.find(g => g.key === groupKey)) {
+                      groups.push({
+                        name: usableGroups[groupKey] || groupKey,
+                        desc: usableGroups[groupKey] || '',
+                        key: groupKey,
+                        group_ratio: groupRatio
+                      });
+                    }
                   }
                 }
               }
@@ -868,7 +878,7 @@ class GroupModel {
             const models = response.data.data;
             const groupRatios = response.data.group_ratio;
             const usableGroups = response.data.usable_group || {};
-
+            
             // 处理分组信息
             for (const [key, value] of Object.entries(usableGroups)) {
               groups.push({
@@ -906,11 +916,32 @@ class GroupModel {
                       groupRatio,
                       completionRatio
                     };
+
+                    // 将模型和价格信息保存到数据库
+                    const modelWithPrices = {
+                      ...model,
+                      input_price: inputPrice,
+                      output_price: outputPrice,
+                      group_ratio: groupRatio,
+                      model_ratio: modelRatio,
+                      completion_ratio: completionRatio
+                    };
+                    await this.saveModelToDatabase(groups, groupKey, modelName, modelWithPrices);
+                    
+                    // 如果分组不存在于 groups 中，则添加
+                    if (!groups.find(g => g.key === groupKey)) {
+                      groups.push({
+                        name: usableGroups[groupKey] || groupKey,
+                        desc: usableGroups[groupKey] || '',
+                        key: groupKey,
+                        group_ratio: groupRatio
+                      });
+                    }
                   }
                 }
               }
             }
-
+            
             success = groups.length > 0;
             if (success) break;
           }
@@ -961,6 +992,17 @@ class GroupModel {
                       groupRatio,
                       completionRatio
                     };
+
+                    // 将模型和价格信息保存到数据库
+                    const modelData = {
+                      model_name: modelName,
+                      model_ratio: modelRatio,
+                      completion_ratio: completionRatio,
+                      input_price: inputPrice,
+                      output_price: outputPrice,
+                      group_ratio: groupRatio
+                    };
+                    await this.saveModelToDatabase(groups, key, modelName, modelData);
                   }
                 }
               }

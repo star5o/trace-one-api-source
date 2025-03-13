@@ -353,3 +353,5 @@ CompletionRatio 为各个模型的补全倍率，GroupRatio 为各个分组的�
 }
 ```
 name为分组名称，displayName为显示名称，models为可用模型列表，group_ratio为分组倍率
+
+⑤one-api 默认的。
