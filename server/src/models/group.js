@@ -472,13 +472,18 @@ class GroupModel {
             
             // 处理每个模型
             for (const model of models) {
-              if (model.model_name && model.model_ratio && model.completion_ratio && model.enable_groups) {
+              if (model.model_name && model.model_ratio && model.completion_ratio) {
                 const modelName = model.model_name;
                 const modelRatio = model.model_ratio;
                 const completionRatio = model.completion_ratio;
                 
+                // 确保 enable_groups 是数组，如果不存在则使用 groupRatios 的所有键
+                const enableGroups = Array.isArray(model.enable_groups) && model.enable_groups.length > 0 
+                  ? model.enable_groups 
+                  : Object.keys(groupRatios);
+                
                 // 为每个分组计算价格
-                for (const groupKey of model.enable_groups) {
+                for (const groupKey of enableGroups) {
                   if (groupRatios[groupKey]) {
                     const groupRatio = groupRatios[groupKey];
                     
@@ -881,13 +886,18 @@ class GroupModel {
 
             // 处理每个模型
             for (const model of models) {
-              if (model.model_name && model.model_ratio && model.completion_ratio && model.enable_groups) {
+              if (model.model_name && model.model_ratio && model.completion_ratio) {
                 const modelName = model.model_name;
                 const modelRatio = model.model_ratio;
                 const completionRatio = model.completion_ratio;
 
+                // 确保 enable_groups 是数组，如果不存在则使用 groupRatios 的所有键
+                const enableGroups = Array.isArray(model.enable_groups) && model.enable_groups.length > 0 
+                  ? model.enable_groups 
+                  : Object.keys(groupRatios);
+                
                 // 为每个分组计算价格
-                for (const groupKey of model.enable_groups) {
+                for (const groupKey of enableGroups) {
                   if (groupRatios[groupKey]) {
                     const groupRatio = groupRatios[groupKey];
 
