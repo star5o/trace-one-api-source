@@ -2,6 +2,41 @@ const { db } = require('./database');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 
+// 辅助函数：发送带有统一头信息的 HTTP 请求
+async function makeRequest(url, options = {}, proxy = null) {
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Referer': url.split('/api')[0],
+    'Origin': url.split('/api')[0],
+    ...options.headers
+  };
+  
+  if (proxy && proxy.cookie) {
+    headers['Cookie'] = proxy.cookie;
+  }
+  
+  try {
+    return await axios.get(url, {
+      timeout: options.timeout || 5000,
+      headers: headers,
+      ...options
+    });
+  } catch (error) {
+    console.log(`请求 ${url} 失败:`, error.message);
+    if (error.response) {
+      console.log('错误响应状态:', error.response.status);
+      try {
+        console.log('错误响应数据:', JSON.stringify(error.response.data).substring(0, 200) + '...');
+      } catch (e) {
+        console.log('无法解析错误响应数据');
+      }
+    }
+    throw error;
+  }
+}
+
 class GroupModel {
   // 创建分组
   static create(proxyId, name, key, remark = null, group_ratio = 1.0) {
@@ -176,11 +211,11 @@ class GroupModel {
       });
       
       // 调用OpenAI API获取模型列表
-      const response = await axios.get(`${proxy.baseUrl}/v1/models`, {
+      const response = await makeRequest(`${proxy.baseUrl}/v1/models`, {
         headers: {
           'Authorization': `Bearer ${group.key}`
         }
-      });
+      }, proxy);
       
       const models = response.data.data;
       const now = Date.now();
@@ -272,10 +307,7 @@ class GroupModel {
         
         // 尝试 /api/pricing 路径
         try {
-          const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
-            timeout: 5000,
-            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-          });
+          const pricingResponse = await makeRequest(`${proxy.baseUrl}/api/pricing`, {}, proxy);
           apiResponses.push(pricingResponse);
         } catch (error) {
           console.log('尝试 /api/pricing 路径失败:', error.message);
@@ -283,10 +315,7 @@ class GroupModel {
         
         // 尝试 /api/groups 路径
         try {
-          const groupsResponse = await axios.get(`${proxy.baseUrl}/api/groups`, {
-            timeout: 5000,
-            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-          });
+          const groupsResponse = await makeRequest(`${proxy.baseUrl}/api/groups`, {}, proxy);
           apiResponses.push(groupsResponse);
         } catch (error) {
           console.log('尝试 /api/groups 路径失败:', error.message);
@@ -442,10 +471,7 @@ class GroupModel {
         
         // 尝试 /api/pricing 路径
         try {
-          const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
-            timeout: 5000,
-            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-          });
+          const pricingResponse = await makeRequest(`${proxy.baseUrl}/api/pricing`, {}, proxy);
           apiResponses.push(pricingResponse);
         } catch (error) {
           console.log('尝试 /api/pricing 路径失败:', error.message);
@@ -453,10 +479,7 @@ class GroupModel {
         
         // 尝试 /api/models/price 路径
         try {
-          const modelsPriceResponse = await axios.get(`${proxy.baseUrl}/api/models/price`, {
-            timeout: 5000,
-            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-          });
+          const modelsPriceResponse = await makeRequest(`${proxy.baseUrl}/api/models/price`, {}, proxy);
           apiResponses.push(modelsPriceResponse);
         } catch (error) {
           console.log('尝试 /api/models/price 路径失败:', error.message);
@@ -640,10 +663,7 @@ class GroupModel {
             // 尝试获取可用的模型分组信息
             let availableModelsByGroups = {};
             try {
-              const availableModelsResponse = await axios.get(`${proxy.baseUrl}/api/user/available_models_by_groups`, {
-                timeout: 5000,
-                headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-              });
+              const availableModelsResponse = await makeRequest(`${proxy.baseUrl}/api/user/available_models_by_groups`, {}, proxy);
               
               if (availableModelsResponse.data && availableModelsResponse.data.data && availableModelsResponse.data.data.groups) {
                 const groupsData = availableModelsResponse.data.data.groups;
@@ -846,10 +866,7 @@ class GroupModel {
 
         // 尝试 /api/pricing 路径
         try {
-          const pricingResponse = await axios.get(`${proxy.baseUrl}/api/pricing`, {
-            timeout: 5000,
-            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-          });
+          const pricingResponse = await makeRequest(`${proxy.baseUrl}/api/pricing`, {}, proxy);
           apiResponses.push(pricingResponse);
         } catch (error) {
           console.log('尝试 /api/pricing 路径失败:', error.message);
@@ -857,10 +874,7 @@ class GroupModel {
 
         // 尝试 /api/models/price 路径
         try {
-          const modelsPriceResponse = await axios.get(`${proxy.baseUrl}/api/models/price`, {
-            timeout: 5000,
-            headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-          });
+          const modelsPriceResponse = await makeRequest(`${proxy.baseUrl}/api/models/price`, {}, proxy);
           apiResponses.push(modelsPriceResponse);
         } catch (error) {
           console.log('尝试 /api/models/price 路径失败:', error.message);
@@ -1045,14 +1059,11 @@ class GroupModel {
             // 尝试获取可用的模型分组信息
             let availableModelsByGroups = {};
             try {
-              const availableModelsResponse = await axios.get(`${proxy.baseUrl}/api/user/available_models_by_groups`, {
-                timeout: 5000,
-                headers: proxy.cookie ? { 'Cookie': proxy.cookie } : {}
-              });
-
+              const availableModelsResponse = await makeRequest(`${proxy.baseUrl}/api/user/available_models_by_groups`, {}, proxy);
+              
               if (availableModelsResponse.data && availableModelsResponse.data.data && availableModelsResponse.data.data.groups) {
                 const groupsData = availableModelsResponse.data.data.groups;
-
+                
                 for (const group of groupsData) {
                   if (group.name && group.models) {
                     availableModelsByGroups[group.name] = {
