@@ -56,6 +56,11 @@
                 <template #icon><link-outlined /></template>
                 <span>中转溯源</span>
               </a-menu-item>
+
+              <a-menu-item key="/login-records" @click="() => $router.push('/login-records')" v-if="user && user.isAdmin">
+                <template #icon><history-outlined /></template>
+                <span>登录记录</span>
+              </a-menu-item>
             </a-menu>
             
             <div class="user-info" v-if="user">
@@ -96,7 +101,7 @@
 import { computed, onMounted, ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { checkAuth, logout, getCurrentUser, changePassword } from './store/auth';
-import { DownOutlined, MonitorOutlined, LinkOutlined, KeyOutlined, LogoutOutlined, AppstoreOutlined } from '@ant-design/icons-vue';
+import { DownOutlined, MonitorOutlined, LinkOutlined, KeyOutlined, LogoutOutlined, AppstoreOutlined, HistoryOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 
 export default {
@@ -107,7 +112,8 @@ export default {
     LinkOutlined,
     KeyOutlined,
     LogoutOutlined,
-    AppstoreOutlined
+    AppstoreOutlined,
+    HistoryOutlined
   },
   setup() {
     const router = useRouter();

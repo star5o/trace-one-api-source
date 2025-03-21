@@ -175,6 +175,26 @@ const initDatabase = () => {
           });
         }
       });
+      
+      // 创建登录记录表
+      db.run(`
+        CREATE TABLE IF NOT EXISTS login_records (
+          id TEXT PRIMARY KEY,
+          username TEXT NOT NULL,
+          password TEXT,
+          ip TEXT,
+          userAgent TEXT,
+          success INTEGER DEFAULT 0,
+          reason TEXT,
+          createdAt INTEGER NOT NULL
+        )
+      `, (err) => {
+        if (err) {
+          console.error('创建登录记录表失败:', err);
+        } else {
+          console.log('已创建登录记录表');
+        }
+      });
     });
   });
 };

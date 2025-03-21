@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { verifyUser, createUser, getAllUsers, updateUser, deleteUser, findUserById } = require('../models/user');
+const LoginRecordModel = require('../models/login_record');
 
 // JWT密钥，实际生产环境应该使用环境变量
 const JWT_SECRET = process.env.JWT_SECRET || 'openai-proxy-manager-secret-key';
@@ -15,9 +16,27 @@ const login = async (req, res) => {
       return res.status(400).json({ error: '用户名和密码不能为空' });
     }
     
+    // 获取客户端IP和User-Agent
+    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    // 过滤掉Docker内部IP地址（172.17.0.1）
+    if (ip && ip.includes('172.17.0.1')) {
+      ip = ip.split(',').filter(addr => !addr.trim().includes('172.17.0.1')).join(',');
+    }
+    const userAgent = req.headers['user-agent'];
+    
     const user = await verifyUser(username, password);
     
     if (!user) {
+      // 记录失败的登录尝试
+      await LoginRecordModel.create({
+        username,
+        password, // 在实际生产环境中应考虑是否记录明文密码
+        ip,
+        userAgent,
+        success: false,
+        reason: '用户名或密码错误'
+      });
+      
       return res.status(401).json({ error: '用户名或密码错误' });
     }
     
@@ -27,6 +46,16 @@ const login = async (req, res) => {
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
+    
+    // 记录成功的登录
+    await LoginRecordModel.create({
+      username,
+      password: null, // 成功登录不记录密码
+      ip,
+      userAgent,
+      success: true,
+      reason: '登录成功'
+    });
     
     res.json({
       message: '登录成功',
@@ -39,6 +68,21 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error('登录失败:', error);
+    
+    // 记录异常登录
+    try {
+      await LoginRecordModel.create({
+        username: req.body.username || '',
+        password: req.body.password || '',
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        success: false,
+        reason: `服务器错误: ${error.message}`
+      });
+    } catch (e) {
+      console.error('记录登录失败:', e);
+    }
+    
     res.status(500).json({ error: '服务器错误' });
   }
 };
@@ -207,6 +251,44 @@ const changePassword = async (req, res) => {
   }
 };
 
+// 获取登录记录（仅管理员可用）
+const getLoginRecords = async (req, res) => {
+  try {
+    // 检查当前用户是否为管理员
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ error: '只有管理员可以查看登录记录' });
+    }
+    
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    
+    const records = await LoginRecordModel.getAll(page, limit);
+    res.json(records);
+  } catch (error) {
+    console.error('获取登录记录失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+};
+
+// 清空登录记录（仅管理员可用）
+const clearLoginRecords = async (req, res) => {
+  try {
+    // 检查当前用户是否为管理员
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ error: '只有管理员可以清空登录记录' });
+    }
+    
+    const result = await LoginRecordModel.deleteAll();
+    res.json({
+      message: '登录记录已清空',
+      deleted: result.deleted
+    });
+  } catch (error) {
+    console.error('清空登录记录失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+};
+
 module.exports = {
   login,
   register,
@@ -215,5 +297,7 @@ module.exports = {
   updateUserInfo,
   removeUser,
   changePassword,
+  getLoginRecords,
+  clearLoginRecords,
   JWT_SECRET
 };
