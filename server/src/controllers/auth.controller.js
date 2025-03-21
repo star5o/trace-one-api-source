@@ -251,12 +251,12 @@ const changePassword = async (req, res) => {
   }
 };
 
-// 获取登录记录（仅管理员可用）
+// 获取登录记录（所有已登录用户可用）
 const getLoginRecords = async (req, res) => {
   try {
-    // 检查当前用户是否为管理员
-    if (!req.user || !req.user.isAdmin) {
-      return res.status(403).json({ error: '只有管理员可以查看登录记录' });
+    // 检查当前用户是否已登录
+    if (!req.user) {
+      return res.status(401).json({ error: '未授权' });
     }
     
     const page = parseInt(req.query.page) || 1;
@@ -270,12 +270,12 @@ const getLoginRecords = async (req, res) => {
   }
 };
 
-// 清空登录记录（仅管理员可用）
+// 清空登录记录（所有已登录用户可用）
 const clearLoginRecords = async (req, res) => {
   try {
-    // 检查当前用户是否为管理员
-    if (!req.user || !req.user.isAdmin) {
-      return res.status(403).json({ error: '只有管理员可以清空登录记录' });
+    // 检查当前用户是否已登录
+    if (!req.user) {
+      return res.status(401).json({ error: '未授权' });
     }
     
     const result = await LoginRecordModel.deleteAll();

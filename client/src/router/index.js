@@ -36,7 +36,7 @@ const routes = [
     path: '/login-records',
     name: 'LoginRecords',
     component: () => import('../views/LoginRecords.vue'),
-    meta: { title: '登录记录', requiresAuth: true, requiresAdmin: true }
+    meta: { title: '登录记录', requiresAuth: true }
   }
 ]
 
@@ -51,17 +51,12 @@ router.beforeEach((to, from, next) => {
   // 检查路由是否需要认证
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const isPublic = to.matched.some(record => record.meta.public)
-  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
   const { isAuthenticated, user } = checkAuth()
   
   // 如果需要认证且未登录，重定向到登录页面
   if (requiresAuth && !isAuthenticated) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
   } 
-  // 如果需要管理员权限且用户不是管理员，重定向到首页
-  else if (requiresAdmin && (!user || !user.isAdmin)) {
-    next({ name: 'ProxyList' })
-  }
   // 如果已登录且访问登录页面，重定向到首页
   else if (isAuthenticated && isPublic) {
     next({ name: 'ProxyList' })

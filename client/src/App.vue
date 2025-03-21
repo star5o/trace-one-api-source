@@ -57,7 +57,7 @@
                 <span>中转溯源</span>
               </a-menu-item>
 
-              <a-menu-item key="/login-records" @click="() => $router.push('/login-records')" v-if="user && user.isAdmin">
+              <a-menu-item key="/login-records" @click="() => $router.push('/login-records')" v-if="user">
                 <template #icon><history-outlined /></template>
                 <span>登录记录</span>
               </a-menu-item>
